@@ -1,50 +1,42 @@
-# Welcome to your Expo app 👋
+# Bienvenue sur l'application IBI Group Fleet 👋
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Ce projet a pour but, la mise en place d'une application Mobile pour la gestion de la flotte de l'IBI Group.
+Projet est concu avec l'outil Expo (React Native) et Prebuild pour Generer l'Android et L'IOS a partir de EAS.
 
-## Get started
+## Pour commencer
 
-1. Install dependencies
+1. Installer les dependances
 
    ```bash
    npm install
    ```
 
-2. Start the app
+2. Lancer l'application
 
    ```bash
     npx expo start
    ```
 
-In the output, you'll find options to open the app in a
+Dans le terminal, vous pouvez trouver des instructions pour ouvrir l'application sur différents appareils.
 
 - [development build](https://docs.expo.dev/develop/development-builds/introduction/)
 - [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
 - [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+- [Expo Go](https://expo.dev/go), un client de développement pour Expo
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+Vous pouvez commencer a developper a partir du dossier **app**.
+Ce projet utilise la [file-based routing](https://docs.expo.dev/router/introduction/), ce qui signifie que vous pouvez trouver les fichiers de navigation dans le dossier **app**.
 
-## Get a fresh project
+## Apprendre plus
 
-When you're ready, run:
+Pour apprendre plus sur Expo, voici quelques ressources:
 
-```bash
-npm run reset-project
-```
+- [Expo documentation](https://docs.expo.dev/): Apprendre les fondamentaux de Expo, ou vous pouvez aller directement consulter dans les versions avancer sur [guides](https://docs.expo.dev/guides).
+- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Suivre le tutoriel d'Expo pas-a-pas ou vous allez creer un projet qui tourne sur Android, iOS, et le web.
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Rejoindre la communaute
 
-## Learn more
+Rejoindre la communaute de développeurs Expo.
 
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- [Expo on GitHub](https://github.com/expo/expo): Rejoindre le projet sur GitHub.
+- [Discord community](https://chat.expo.dev): Chat avec les utilisateurs de la communaute.
