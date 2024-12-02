@@ -2,9 +2,10 @@ import React, { useEffect } from 'react';
 import { View, StyleSheet, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
+import { useRouter } from 'expo-router';
 
 const SplashScreen = () => {
-  const navigation = useNavigation();
+  const router = useRouter();
   const translateX = useSharedValue(-500); 
 
   useEffect(() => {
@@ -13,7 +14,7 @@ const SplashScreen = () => {
 
     // Naviguer vers l'écran Onboarding après 5 secondes
     const timer = setTimeout(() => {
-      navigation.replace('Onboarding/Onboarding');
+      router.replace('/(Onboarding)/Screen1');
     }, 5000);
 
     return () => clearTimeout(timer);
