@@ -2,10 +2,13 @@ import React from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 
-const Screen2 = () => {
+const Bienvenue = () => {
 
   const handleNext = () => {
-    router.navigate('/Onboarding/Bienvenue'); 
+    router.navigate('/(Usertypes)/Types');
+  };
+  const handleNextt = () => {
+    router.navigate('/(UserLogin)/Connexion'); 
   };
 
   return (
@@ -14,18 +17,23 @@ const Screen2 = () => {
         <Text style={styles.skipText}>Skip</Text>
       </TouchableOpacity>
 
-      <Image source={require('../../assets/image/trajet.png')} style={styles.image} />
+      <Image source={require('../../assets/image/welcom.png')} style={styles.image} />
 
       <View style={styles.textContainer}>
-        <Text style={styles.title}>Trajet</Text>
+        <Text style={styles.title}>Bienvenue</Text>
         <Text style={styles.subtitle}>
-        suivez vos trajets en direct pour une experiance riche et unique 
+        Bénéficiez d'une meilleure expérience de partage
         </Text>
       </View>
 
-      <TouchableOpacity style={styles.outerCircle} onPress={handleNext}>
+      <TouchableOpacity  onPress={handleNext}>
         <View style={styles.innerCircle}>
-          <Text style={styles.buttonText}>GO</Text>
+          <Text style={styles.buttonText}>Crée un compte</Text>
+        </View>
+      </TouchableOpacity>
+      <TouchableOpacity  onPress={handleNextt}>
+        <View style={styles.innerCirclee}>
+          <Text style={styles.buttonTextt}>Se connecter</Text>
         </View>
       </TouchableOpacity>
     </View>
@@ -67,33 +75,37 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: 20,
   },
-  outerCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#CFF2EC', // Couleur du cercle extérieur
+
+  innerCircle: {
+    marginTop:50,
+    width: 350,
+    height: 60,
+    borderRadius: 5,
+    backgroundColor: '#0FAC71',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
-    margin: 80,
   },
-  innerCircle: {
-    width: 60,
+  innerCirclee: {
+    marginTop:30,
+    width: 350,
     height: 60,
-    borderRadius: 30,
-    backgroundColor: '#52D5BA', // Couleur du cercle intérieur
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor:'#0FAC71',
+    backgroundColor: '#FFF',
     justifyContent: 'center',
     alignItems: 'center',
   },
   buttonText: {
-    fontSize: 24,
+    fontSize: 17,
     color: '#FFFFFF',
-    fontWeight: 'bold',
+    fontWeight: 'light',
+  },
+  buttonTextt: {
+    fontSize: 17,
+    color: '#0FAC71',
+    fontWeight: 'light',
   },
 });
 
-export default Screen2;
+export default Bienvenue;

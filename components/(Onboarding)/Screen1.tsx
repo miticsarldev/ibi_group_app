@@ -2,13 +2,10 @@ import React from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 
-const Bienvenue = () => {
+const Screen1 = () => {
 
   const handleNext = () => {
-    router.navigate('/Usertypes/Types'); 
-  };
-  const handleNextt = () => {
-    router.navigate('/UserLogin/Connexion'); 
+    router.navigate('/(Onboarding)/Screen2'); 
   };
 
   return (
@@ -17,23 +14,18 @@ const Bienvenue = () => {
         <Text style={styles.skipText}>Skip</Text>
       </TouchableOpacity>
 
-      <Image source={require('../../assets/image/welcom.png')} style={styles.image} />
+      <Image source={require('../../assets/image/onboarding.png')} style={styles.image} />
 
       <View style={styles.textContainer}>
-        <Text style={styles.title}>Bienvenue</Text>
+        <Text style={styles.title}>Voiture électrique</Text>
         <Text style={styles.subtitle}>
-        Bénéficiez d'une meilleure expérience de partage
+          Lutter contre la pollution de l'environnement en utilisant les voitures électriques
         </Text>
       </View>
 
-      <TouchableOpacity  onPress={handleNext}>
+      <TouchableOpacity style={styles.outerCircle} onPress={handleNext}>
         <View style={styles.innerCircle}>
-          <Text style={styles.buttonText}>Crée un compte</Text>
-        </View>
-      </TouchableOpacity>
-      <TouchableOpacity  onPress={handleNextt}>
-        <View style={styles.innerCirclee}>
-          <Text style={styles.buttonTextt}>Se connecter</Text>
+          <Text style={styles.buttonText}>→</Text>
         </View>
       </TouchableOpacity>
     </View>
@@ -75,37 +67,33 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: 20,
   },
-
-  innerCircle: {
-    marginTop:50,
-    width: 350,
-    height: 60,
-    borderRadius: 5,
-    backgroundColor: '#0FAC71',
+  outerCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#CFF2EC', // Couleur du cercle extérieur
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+    margin: 80,
   },
-  innerCirclee: {
-    marginTop:30,
-    width: 350,
+  innerCircle: {
+    width: 60,
     height: 60,
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor:'#0FAC71',
-    backgroundColor: '#FFF',
+    borderRadius: 30,
+    backgroundColor: '#52D5BA', // Couleur du cercle intérieur
     justifyContent: 'center',
     alignItems: 'center',
   },
   buttonText: {
-    fontSize: 17,
+    fontSize: 26,
     color: '#FFFFFF',
-    fontWeight: 'light',
-  },
-  buttonTextt: {
-    fontSize: 17,
-    color: '#0FAC71',
-    fontWeight: 'light',
+    fontWeight: 'bold',
   },
 });
 
-export default Bienvenue;
+export default Screen1;

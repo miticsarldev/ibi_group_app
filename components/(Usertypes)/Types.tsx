@@ -9,7 +9,7 @@ const Types = () => {
     <View style={styles.container}>
       {/* Logo */}
       <Image
-        source={require('../../assets/image/Logo.png')} // Remplacez par votre logo
+        source={require('../../assets/image/Logo.png')} 
         style={styles.logo}
       />
 
@@ -20,10 +20,14 @@ const Types = () => {
       {/* Carte 1 : Utilisateur */}
       <TouchableOpacity
         style={styles.card}
-        onPress={() => router.push('/UserLogin/Inscription')} // Navigue vers la page Type
+<<<<<<< HEAD:components/(Usertypes)/Types.tsx
+        onPress={() => router.push('/(UserLogin)/Inscription')} 
+=======
+        onPress={() => router.push('/UserLogin/Inscription')} 
+>>>>>>> 2144295ee7d05e500cdaab21af89248374c40468:app/Usertypes/Types.tsx
       >
         <Image
-          source={require('../../assets/image/utilisateur.jpg')} // Remplacez par l'image "Utilisateur"
+          source={require('../../assets/image/utilisateur.jpg')} 
           style={styles.cardImage}
         />
         <View style={styles.cardTextContainer}>
@@ -37,10 +41,10 @@ const Types = () => {
       {/* Carte 2 : Chauffeur */}
       <TouchableOpacity
         style={styles.card}
-        onPress={() => router.push('')} // Navigue vers la page Type
+        onPress={() => router.push('')} 
       >
         <Image
-          source={require('../../assets/image/chauffeur.jpg')} // Remplacez par l'image "Chauffeur"
+          source={require('../../assets/image/chauffeur.jpg')} 
           style={styles.cardImage}
         />
         <View style={styles.cardTextContainer}>

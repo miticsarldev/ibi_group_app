@@ -81,8 +81,8 @@ const Inscription = () => {
         />
         <Text style={styles.checkboxText}>
           En vous inscrivant, vous acceptez les{' '}
-          <Text style={styles.link}>Conditions d'utilisation</Text> et la{' '}
-          <Text style={styles.link}>Politique de confidentialité</Text>.
+          <Text >Conditions d'utilisation</Text> et la{' '}
+          <Text >Politique de confidentialité</Text>.
         </Text>
       </View>
 
@@ -94,7 +94,7 @@ const Inscription = () => {
       {/* Lien vers connexion */}
       <View style={styles.loginContainer}>
         <Text style={styles.loginText}>Vous avez déjà un compte ?</Text>
-        <TouchableOpacity onPress={() => router.push('/UserLogin/Connexion')}>
+        <TouchableOpacity onPress={() => router.push('/(UserLogin)/Connexion')}>
             <Text style={styles.loginLink}> Connectez-vous</Text>
         </TouchableOpacity>
         </View>

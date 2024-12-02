@@ -1,13 +1,11 @@
 import React from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import { router } from 'expo-router';
 
-const Onboarding = () => {
-  const navigation = useNavigation();
+const Screen2 = () => {
 
   const handleNext = () => {
-    router.navigate('/Onboarding/Screen2'); 
+    router.navigate('/(Onboarding)/Bienvenue'); 
   };
 
   return (
@@ -16,18 +14,18 @@ const Onboarding = () => {
         <Text style={styles.skipText}>Skip</Text>
       </TouchableOpacity>
 
-      <Image source={require('../../assets/image/onboarding.png')} style={styles.image} />
+      <Image source={require('../../assets/image/trajet.png')} style={styles.image} />
 
       <View style={styles.textContainer}>
-        <Text style={styles.title}>Voiture électrique</Text>
+        <Text style={styles.title}>Trajet</Text>
         <Text style={styles.subtitle}>
-          Lutter contre la pollution de l'environnement en utilisant les voitures électriques
+        suivez vos trajets en direct pour une experiance riche et unique 
         </Text>
       </View>
 
       <TouchableOpacity style={styles.outerCircle} onPress={handleNext}>
         <View style={styles.innerCircle}>
-          <Text style={styles.buttonText}>→</Text>
+          <Text style={styles.buttonText}>GO</Text>
         </View>
       </TouchableOpacity>
     </View>
@@ -92,10 +90,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   buttonText: {
-    fontSize: 26,
+    fontSize: 24,
     color: '#FFFFFF',
     fontWeight: 'bold',
   },
 });
 
-export default Onboarding;
+export default Screen2;
