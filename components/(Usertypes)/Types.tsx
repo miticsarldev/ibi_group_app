@@ -20,7 +20,11 @@ const Types = () => {
       {/* Carte 1 : Utilisateur */}
       <TouchableOpacity
         style={styles.card}
+<<<<<<< HEAD:components/(Usertypes)/Types.tsx
         onPress={() => router.push('/(UserLogin)/Inscription')} 
+=======
+        onPress={() => router.push('/UserLogin/Inscription')} 
+>>>>>>> 2144295ee7d05e500cdaab21af89248374c40468:app/Usertypes/Types.tsx
       >
         <Image
           source={require('../../assets/image/utilisateur.jpg')} 
