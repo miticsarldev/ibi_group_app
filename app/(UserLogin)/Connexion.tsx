@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
-import Checkbox from 'expo-checkbox';
 import { useRouter } from 'expo-router';
 
 const Connexion = () => {
@@ -10,18 +9,13 @@ const Connexion = () => {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isRemembered, setIsRemembered] = useState(false);
 
   const handleLogin = () => {
-    if (!email || !password) {
-      Alert.alert('Erreur', 'Veuillez remplir tous les champs.');
-      return;
-    }
-
-    // Ici, vous pouvez ajouter votre logique d'authentification, par exemple appeler une API.
-
-    
-    router.replace('/'); // Redirige vers l'écran principal ou un autre écran après connexion.
+    // if (!email || !password) {
+    //   Alert.alert('Erreur', 'Veuillez remplir tous les champs.');
+    //   return;
+    // }
+    router.replace('/Home');
   };
 
   return (
@@ -65,7 +59,7 @@ const Connexion = () => {
       {/* Lien vers inscription */}
       <View style={styles.signupContainer}>
         <Text style={styles.signupText}>Vous n'avez pas de compte ?</Text>
-        <TouchableOpacity onPress={() => router.push('/UserLogin/Inscription')}>
+        <TouchableOpacity onPress={() => router.push('/(UserLogin)/Inscription')}>
           <Text style={styles.signupLink}>Inscrivez-vous</Text>
         </TouchableOpacity>
       </View>

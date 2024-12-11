@@ -5,6 +5,7 @@ export default function OnboardingLayout() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Connexion" />
       <Stack.Screen name="Inscription" />
+      <Stack.Screen name="Home" />
     </Stack>
   );
 }
