@@ -1,7 +1,6 @@
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
-import { Slot } from 'expo-router';
 import React from 'react';
 import Home from './Home';
 import Apropos from './Apropos';

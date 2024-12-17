@@ -37,16 +37,28 @@ const Details = () => {
       </View>
 
       <View style={styles.locationContainer}>
-        <View style={styles.location}>
-          <Text style={styles.locationTitle}>{lieuDepart}</Text>
-          <Text style={styles.locationSubtitle}>{villeDepart}</Text>
-        </View>
-        <View style={styles.separator} />
-        <View style={styles.location}>
-          <Text style={styles.locationTitle}>{lieuArrivee}</Text>
-          <Text style={styles.locationSubtitle}>{villeArrivee}</Text>
-        </View>
-      </View>
+  {/* Icône de départ avec le texte */}
+  <View style={styles.locationRow}>
+    <Ionicons name="radio-button-on" size={24} color="red" />
+    <View style={styles.locationText}>
+      <Text style={styles.locationTitle}>{lieuDepart}</Text>
+      <Text style={styles.locationSubtitle}>{villeDepart}</Text>
+    </View>
+  </View>
+
+  {/* Ligne verticale */}
+  <View style={styles.line} />
+
+  {/* Icône d'arrivée avec le texte */}
+  <View style={styles.locationRow}>
+    <Ionicons name="location" size={24} color="#00a84f" />
+    <View style={styles.locationText}>
+      <Text style={styles.locationTitle}>{lieuArrivee}</Text>
+      <Text style={styles.locationSubtitle}>{villeArrivee}</Text>
+    </View>
+  </View>
+</View>
+
 
       {/* Prix et méthode de paiement */}
       <View style={styles.paymentContainer}>
@@ -78,7 +90,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: "bold",
-    marginLeft: 95,
+    marginLeft: 120,
     color: "#000",
   },
   date: {
@@ -107,11 +119,24 @@ const styles = StyleSheet.create({
   locationContainer: {
     backgroundColor: "#f9f9f9",
     borderRadius: 8,
-    padding: 15,
+    paddingVertical: 10,
+    paddingHorizontal: 15,
     marginBottom: 30,
   },
-  location: {
-    marginBottom: 10,
+  locationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 5,
+  },
+  locationText: {
+    marginLeft: 10,
+  },
+  line: {
+    width: 2,
+    height: 30,
+    backgroundColor: "#ccc",
+    marginLeft: 11, /* Aligné avec l'icône */
+    marginVertical: 2,
   },
   locationTitle: {
     fontSize: 16,

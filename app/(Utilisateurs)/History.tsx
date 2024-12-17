@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: "bold",
-    marginLeft: 90,
+    marginLeft: 110,
     color: "#000",
   },
   tabContainer: {
@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
   status: {
     paddingTop: 20,
     fontSize: 14,
-    color: "#00a84f",
+    color: "#FEC400",
     fontWeight: "bold",
 
   },

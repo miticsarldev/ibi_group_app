@@ -1,15 +1,24 @@
-import { View, Text, StyleSheet} from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, Image} from 'react-native'
 import React from 'react'
-
+import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons'
 const Apropos = () => {
     const handleBackPress = () => {
         
       };
   return (
-    <View>
       
-      <View style={styles.contentContainer}>
-        <Text style={styles.header}> Aprops</Text>
+      <View style={styles.container}>
+      {/* Barre de navigation */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={24} color="#000" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Apropos</Text>
+      </View>
+      <View style={styles.illustration}>
+            <Image source={require('../../assets/image/question.png')} />
+            </View>
         <Text style={styles.contentText}>
           Plateforme de covoiturage professionnelle. Ici, nous ne vous
           fournirons que du contenu intéressant, que vous apprécierez beaucoup.
@@ -20,22 +29,31 @@ const Apropos = () => {
           autant que nous aimons vous les proposer. 
         </Text>
       </View>
-    </View>
+
   )
 }
 const styles = StyleSheet.create({
 
-contentContainer: {
-    marginTop: 30,
-    alignSelf: "center",
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 20,
+    paddingVertical: 40,
   },
-  header:{
-    marginBottom:30,
-    textAlign: "center",
-    fontFamily: "Poppins, sans-serif",
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  headerTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-
+    fontWeight: "bold",
+    marginLeft: 110,
+    color: "#000",
+  },
+  illustration: {
+    alignItems: "center",
+    margin: 25,
   },
   contentText: {
     color: "#5A5A5A",

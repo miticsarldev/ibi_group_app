@@ -45,7 +45,7 @@ const Help = () => {
       <View style={styles.content}>
         {activeTab === "Questions" ? (
           <ScrollView>
-            {/* Illustration */}
+            
             <View style={styles.illustration}>
             <Image source={require('../../assets/image/question.png')} />
             </View>
