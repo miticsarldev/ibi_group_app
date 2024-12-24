@@ -39,7 +39,7 @@ const Details = () => {
       <View style={styles.locationContainer}>
   {/* Icône de départ avec le texte */}
   <View style={styles.locationRow}>
-    <Ionicons name="radio-button-on" size={24} color="red" />
+    <Ionicons name="radio-button-on" size={24} color="#da2c38" />
     <View style={styles.locationText}>
       <Text style={styles.locationTitle}>{lieuDepart}</Text>
       <Text style={styles.locationSubtitle}>{villeDepart}</Text>
@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
     width: 2,
     height: 30,
     backgroundColor: "#ccc",
-    marginLeft: 11, /* Aligné avec l'icône */
+    marginLeft: 11, 
     marginVertical: 2,
   },
   locationTitle: {

@@ -28,7 +28,7 @@ const Help = () => {
           onPress={() => setActiveTab("Questions")}
         >
           <Text style={[styles.tabText, activeTab === "Questions" && styles.activeTabText]}>
-            Question
+            Questions
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -41,27 +41,26 @@ const Help = () => {
         </TouchableOpacity>
       </View>
 
-      
+      {/* Content */}
       <View style={styles.content}>
         {activeTab === "Questions" ? (
           <ScrollView>
-            
             <View style={styles.illustration}>
-            <Image source={require('../../assets/image/question.png')} />
+              <Image
+                source={require("../../assets/image/question.png")}
+                style={{ width: 200, height: 200, resizeMode: "contain" }}
+              />
             </View>
-            <Text style={styles.sectionTitle}>Question fréquente</Text>
+            <Text style={styles.sectionTitle}>Questions fréquentes</Text>
 
-            
             {[
               {
                 question: "Comment récupérer mes objets perdus ?",
-                answer:
-                  "Pour les objets perdus, veuillez contacter le service client dans les paramètres de l'application.",
+                answer: "Pour les objets perdus, veuillez contacter le service client dans les paramètres de l'application.",
               },
               {
                 question: "Comment devenir chauffeur ?",
-                answer:
-                  "Veuillez visiter notre site web pour plus d'informations sur les étapes pour devenir chauffeur.",
+                answer: "Veuillez visiter notre site web pour plus d'informations sur les étapes pour devenir chauffeur.",
               },
               {
                 question: "Comment voir mes historiques ?",
@@ -69,8 +68,7 @@ const Help = () => {
               },
               {
                 question: "Comment apprécier un chauffeur ?",
-                answer:
-                  "Après votre trajet, une option pour évaluer le chauffeur s'affiche sur l'écran principal.",
+                answer: "Après votre trajet, une option pour évaluer le chauffeur s'affiche sur l'écran principal.",
               },
               {
                 question: "Comment annuler un trajet ?",
@@ -96,8 +94,30 @@ const Help = () => {
             ))}
           </ScrollView>
         ) : (
-          <View>
-            <Text style={styles.placeholderText}>Contenu des contacts à ajouter ici.</Text>
+          <View style={styles.contactContainer}>
+            {/* Téléphone */}
+            <View style={styles.contactItem}>
+              <Ionicons name="call-outline" size={24} color="#00a84f" />
+              <Text style={styles.contactText}>+223 20-20-20-20</Text>
+            </View>
+
+            {/* Site Web */}
+            <View style={styles.contactItem}>
+              <Ionicons name="globe-outline" size={24} color="#00a84f" />
+              <Text style={styles.contactText}>WWW.Ibigroup.com</Text>
+            </View>
+
+            {/* Instagram */}
+            <View style={styles.contactItem}>
+              <Ionicons name="logo-instagram" size={24} color="#00a84f" />
+              <Text style={styles.contactText}>https://IbiGroup.instagram.com</Text>
+            </View>
+
+            {/* Facebook */}
+            <View style={styles.contactItem}>
+              <Ionicons name="logo-facebook" size={24} color="#00a84f" />
+              <Text style={styles.contactText}>https://Ibigroup.facebook.com</Text>
+            </View>
           </View>
         )}
       </View>
@@ -108,7 +128,7 @@ const Help = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     paddingHorizontal: 20,
     paddingVertical: 40,
   },
@@ -181,11 +201,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#666",
   },
-  placeholderText: {
+  contactContainer: {
+    paddingTop: 20,
+  },
+  contactItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  contactText: {
     fontSize: 16,
-    color: "#aaa",
-    textAlign: "center",
-    marginTop: 20,
+    color: "#000",
+    marginLeft: 16,
   },
 });
 

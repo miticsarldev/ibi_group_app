@@ -5,9 +5,10 @@ import axios from "axios";
 
 import MapComponent from "../../components/Maps";
 import ModalComponent from "../../components/Modal";
+import { LocationObjectCoords } from 'expo-location';
 
 const Home = () => {
-  const [location, setLocation] = useState(null); // Position actuelle
+  const [location, setLocation] = useState<LocationObjectCoords | null>(null);
   const [modalVisible, setModalVisible] = useState(false); // État de la modal
   const [destination, setDestination] = useState(""); // Destination choisie
   const [routeCoordinates, setRouteCoordinates] = useState([]); // Itinéraire
@@ -23,48 +24,79 @@ const Home = () => {
     (async () => {
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
-        Alert.alert("Erreur", "Permission refusée.");
+        Alert.alert("Erreur", "Permission refusée pour accéder à la localisation.");
         return;
       }
       try {
         const currentLocation = await Location.getCurrentPositionAsync({});
-        setLocation(currentLocation.coords);
+        console.log("Position actuelle :", currentLocation.coords);
+        setLocation(currentLocation.coords); // Définit la position actuelle dans l'état
       } catch (error) {
-        Alert.alert("Erreur", "Impossible d'obtenir la position actuelle.");
+        console.log("Erreur lors de la récupération de la position :", error);
+        Alert.alert("Erreur", "Impossible d'obtenir votre position actuelle.");
       }
     })();
   }, []);
-
-  // Récupérer l'itinéraire via Google Maps API
-  const fetchRoute = async () => {
-    if (!location) {
-      Alert.alert("Erreur", "La position actuelle est introuvable.");
+  
+ 
+  const fetchRoute = async (start: { latitude: any; longitude: any; } | undefined, end: { latitude: any; longitude: any; } | undefined, setRouteCoordinates: ((arg0: { latitude: number; longitude: number; }[]) => void) | undefined) => {
+    if (!start || !end) {
+      console.error("Coordonnées de départ ou d'arrivée manquantes.");
       return;
     }
+  
+    const API_KEY = "AIzaSyCcYSuP3NHBWpGK-2vBDwAXiW6moe2lcho"; // Remplacez par votre clé API
     try {
-      const API_KEY = "AIzaSyCcYSuP3NHBWpGK-2vBDwAXiW6moe2lcho";
-      const response = await axios.get(
-        `https://maps.googleapis.com/maps/api/directions/json?origin=${location.latitude},${location.longitude}&destination=${destination}&key=${API_KEY}`
+      const response = await fetch(
+        `https://maps.googleapis.com/maps/api/directions/json?origin=${start.latitude},${start.longitude}&destination=${end.latitude},${end.longitude}&key=${API_KEY}`
       );
-      if (response.data.routes.length > 0) {
-        const coordinates = response.data.routes[0].legs[0].steps.map(
-          (step) => ({
-            latitude: step.start_location.lat,
-            longitude: step.start_location.lng,
-          })
-        );
-        coordinates.push({
-          latitude: response.data.routes[0].legs[0].end_location.lat,
-          longitude: response.data.routes[0].legs[0].end_location.lng,
-        });
-        setRouteCoordinates(coordinates);
+      const data = await response.json();
+  
+      if (data.routes.length) {
+        const route = data.routes[0].overview_polyline.points;
+        const decodedPoints = decodePolyline(route); // Décoder la polyline
+        setRouteCoordinates(decodedPoints); // Mettre à jour l'état
       } else {
-        Alert.alert("Erreur", "Aucun trajet trouvé.");
+        console.error("Aucun itinéraire trouvé.");
       }
     } catch (error) {
-      Alert.alert("Erreur", "Impossible de récupérer le trajet.");
+      console.error("Erreur lors de la récupération du trajet:", error);
     }
   };
+  
+  
+  // Fonction pour décoder une polyline en coordonnées GPS
+  const decodePolyline = (encoded: string) => {
+    let points = [];
+    let index = 0, len = encoded.length;
+    let lat = 0, lng = 0;
+  
+    while (index < len) {
+      let b, shift = 0, result = 0;
+      do {
+        b = encoded.charCodeAt(index++) - 63;
+        result |= (b & 0x1f) << shift;
+        shift += 5;
+      } while (b >= 0x20);
+      let dlat = ((result & 1) ? ~(result >> 1) : (result >> 1));
+      lat += dlat;
+  
+      shift = 0;
+      result = 0;
+      do {
+        b = encoded.charCodeAt(index++) - 63;
+        result |= (b & 0x1f) << shift;
+        shift += 5;
+      } while (b >= 0x20);
+      let dlng = ((result & 1) ? ~(result >> 1) : (result >> 1));
+      lng += dlng;
+  
+      points.push({ latitude: lat / 1e5, longitude: lng / 1e5 });
+    }
+  
+    return points;
+  };
+  
 
   const handleValidateDestination = async () => {
     setModalVisible(false);
@@ -74,11 +106,17 @@ const Home = () => {
   return (
     <View style={styles.container}>
       {/* Carte avec position actuelle, véhicules et itinéraire */}
+      {!location ? (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <Text>Chargement de votre position...</Text>
+      </View>
+    ) : (
       <MapComponent
-        location={location}
+        
         vehicles={vehicles}
         routeCoordinates={routeCoordinates}
       />
+    )}
 
       {/* Bouton pour choisir une destination */}
       <TouchableOpacity
