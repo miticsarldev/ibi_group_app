@@ -35,6 +35,7 @@ export default function RootLayout() {
         <Stack.Screen name="+not-found" />
         <Stack.Screen name='(Usertypes)' options={{headerShown: false}} />
         <Stack.Screen name='(UserLogin)' options={{headerShown: false}} />
+        <Stack.Screen name='(Driver)' options={{headerShown: false}} />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>
