@@ -1,14 +1,14 @@
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { createDrawerNavigator } from '@react-navigation/drawer';
-import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
-import { Slot } from 'expo-router';
-import React from 'react';
-import Home from './Home';
-import Apropos from './Apropos';
-import Help from './Help';
-import History from './History';
-import Parametre from './Parametre';
-import EditProfil from './EditProfil';
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { createDrawerNavigator } from "@react-navigation/drawer";
+import { View, Text, Image, TouchableOpacity, StyleSheet } from "react-native";
+import { Slot } from "expo-router";
+import React from "react";
+import Apropos from "./Apropos";
+import Help from "./Help";
+import History from "./History";
+import Parametre from "./Parametre";
+import EditProfil from "./EditProfil";
+import Adresse from "./Adresse";
 // Création du Drawer
 const Drawer = createDrawerNavigator();
 
@@ -19,17 +19,18 @@ export default function Layout() {
       <Drawer.Navigator
         screenOptions={{
           headerShown: false,
-          drawerType: 'slide',
-          drawerStyle: { width: '70%' },
+          drawerType: "slide",
+          drawerStyle: { width: "70%" },
         }}
         drawerContent={(props) => <CustomDrawerContent {...props} />}
       >
-        <Drawer.Screen name="Home" component={Home} />
+        <Drawer.Screen name="(tabs)" component={Slot} />
         <Drawer.Screen name="EditProfile" component={EditProfil} />
         <Drawer.Screen name="History" component={History} />
         <Drawer.Screen name="Apropos" component={Apropos} />
         <Drawer.Screen name="Parametre" component={Parametre} />
         <Drawer.Screen name="Help" component={Help} />
+        <Drawer.Screen name="Adresse" component={Adresse} />
       </Drawer.Navigator>
     </GestureHandlerRootView>
   );
@@ -40,8 +41,8 @@ function CustomDrawerContent({ navigation }) {
     <View style={styles.drawerContainer}>
       {/* Profil */}
       <View style={styles.profileContainer}>
-      <Image 
-          source={require('../../assets/image/user.jpg')}
+        <Image
+          source={require("../../assets/image/user.jpg")}
           style={styles.profileImage}
         />
         <Text style={styles.profileName}>Yunus Sylla</Text>
@@ -52,7 +53,7 @@ function CustomDrawerContent({ navigation }) {
       <View style={styles.linksContainer}>
         <DrawerLink
           label="Modifier profil"
-          onPress={() => navigation.navigate('EditProfile')}
+          onPress={() => navigation.navigate("EditProfile")}
         />
         {/* <DrawerLink
           label="Adresse"
@@ -60,21 +61,18 @@ function CustomDrawerContent({ navigation }) {
         /> */}
         <DrawerLink
           label="Historique"
-          onPress={() => navigation.navigate('History')}
+          onPress={() => navigation.navigate("History")}
         />
         <DrawerLink
           label="Apropos"
-          onPress={() => navigation.navigate('Apropos')}
+          onPress={() => navigation.navigate("Apropos")}
         />
         <DrawerLink
           label="Parametre"
-          onPress={() => navigation.navigate('Parametre')}
+          onPress={() => navigation.navigate("Parametre")}
         />
-        <DrawerLink
-          label="Help"
-          onPress={() => navigation.navigate('Help')}
-        />
-        <DrawerLink label="Logout" onPress={() => console.log('Logged out')} />
+        <DrawerLink label="Help" onPress={() => navigation.navigate("Help")} />
+        <DrawerLink label="Logout" onPress={() => console.log("Logged out")} />
       </View>
     </View>
   );
@@ -94,10 +92,10 @@ const styles = StyleSheet.create({
   drawerContainer: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
   },
   profileContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 30,
   },
   profileImage: {
@@ -106,15 +104,15 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor:'#0FAC71'
+    borderColor: "#0FAC71",
   },
   profileName: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   profileEmail: {
     fontSize: 14,
-    color: 'gray',
+    color: "gray",
   },
   linksContainer: {
     flex: 1,
@@ -122,10 +120,10 @@ const styles = StyleSheet.create({
   link: {
     paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: "#f0f0f0",
   },
   linkText: {
     fontSize: 16,
-    color: '#333',
+    color: "#333",
   },
 });

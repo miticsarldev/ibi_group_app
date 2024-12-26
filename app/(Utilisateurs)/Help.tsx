@@ -1,5 +1,12 @@
 import React, { useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Image,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 
@@ -27,7 +34,12 @@ const Help = () => {
           style={[styles.tab, activeTab === "Questions" && styles.activeTab]}
           onPress={() => setActiveTab("Questions")}
         >
-          <Text style={[styles.tabText, activeTab === "Questions" && styles.activeTabText]}>
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === "Questions" && styles.activeTabText,
+            ]}
+          >
             Question
           </Text>
         </TouchableOpacity>
@@ -35,23 +47,26 @@ const Help = () => {
           style={[styles.tab, activeTab === "Contacts" && styles.activeTab]}
           onPress={() => setActiveTab("Contacts")}
         >
-          <Text style={[styles.tabText, activeTab === "Contacts" && styles.activeTabText]}>
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === "Contacts" && styles.activeTabText,
+            ]}
+          >
             Contacts
           </Text>
         </TouchableOpacity>
       </View>
 
-      
       <View style={styles.content}>
         {activeTab === "Questions" ? (
           <ScrollView>
             {/* Illustration */}
             <View style={styles.illustration}>
-            <Image source={require('../../assets/image/question.png')} />
+              <Image source={require("../../assets/image/question.png")} />
             </View>
             <Text style={styles.sectionTitle}>Question fréquente</Text>
 
-            
             {[
               {
                 question: "Comment récupérer mes objets perdus ?",
@@ -65,7 +80,8 @@ const Help = () => {
               },
               {
                 question: "Comment voir mes historiques ?",
-                answer: "Accédez à l'onglet 'Historique' dans le menu principal de l'application.",
+                answer:
+                  "Accédez à l'onglet 'Historique' dans le menu principal de l'application.",
               },
               {
                 question: "Comment apprécier un chauffeur ?",
@@ -74,7 +90,8 @@ const Help = () => {
               },
               {
                 question: "Comment annuler un trajet ?",
-                answer: "Accédez à vos trajets en cours et sélectionnez 'Annuler'.",
+                answer:
+                  "Accédez à vos trajets en cours et sélectionnez 'Annuler'.",
               },
             ].map((item, index) => (
               <View key={index} style={styles.faqItem}>
@@ -97,7 +114,9 @@ const Help = () => {
           </ScrollView>
         ) : (
           <View>
-            <Text style={styles.placeholderText}>Contenu des contacts à ajouter ici.</Text>
+            <Text style={styles.placeholderText}>
+              Contenu des contacts à ajouter ici.
+            </Text>
           </View>
         )}
       </View>
@@ -108,7 +127,7 @@ const Help = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     paddingHorizontal: 20,
     paddingVertical: 40,
   },

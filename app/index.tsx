@@ -1,12 +1,17 @@
-import React, { useEffect } from 'react';
-import { View, StyleSheet, Image } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
-import { useRouter } from 'expo-router';
+import React, { useEffect } from "react";
+import { View, StyleSheet, Image } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+} from "react-native-reanimated";
+import { useRouter } from "expo-router";
+import "react-native-get-random-values";
 
 const SplashScreen = () => {
   const router = useRouter();
-  const translateX = useSharedValue(-500); 
+  const translateX = useSharedValue(-500);
 
   useEffect(() => {
     // Animation pour faire entrer la voiture au centre
@@ -14,12 +19,11 @@ const SplashScreen = () => {
 
     // Naviguer vers l'écran Onboarding après 5 secondes
     const timer = setTimeout(() => {
-      router.replace('/(Onboarding)/Screen1');
+      router.replace("/(Utilisateurs)/(tabs)/home");
     }, 5000);
 
     return () => clearTimeout(timer);
   }, []);
-
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }],
@@ -27,9 +31,9 @@ const SplashScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Image source={require('../assets/image/Logo.png')} style={styles.logo} />
+      <Image source={require("../assets/image/Logo.png")} style={styles.logo} />
       <Animated.Image
-        source={require('../assets/image/voiture.png')}
+        source={require("../assets/image/voiture.png")}
         style={[styles.car, animatedStyle]}
       />
     </View>
@@ -39,9 +43,9 @@ const SplashScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#52D5BA',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#52D5BA",
   },
   logo: {
     width: 250,
@@ -51,8 +55,8 @@ const styles = StyleSheet.create({
   car: {
     width: 250,
     height: 200,
-    position: 'absolute',
-    bottom: 30, 
+    position: "absolute",
+    bottom: 30,
   },
 });
 
