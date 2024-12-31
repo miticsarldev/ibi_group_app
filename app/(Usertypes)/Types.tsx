@@ -37,7 +37,7 @@ const Types = () => {
       {/* Carte 2 : Chauffeur */}
       <TouchableOpacity
         style={styles.card}
-        onPress={() => router.push('')} 
+        onPress={() => router.push('/(Driver)/inscriptionDriver')} 
       >
         <Image
           source={require('../../assets/image/chauffeur.jpg')} 
