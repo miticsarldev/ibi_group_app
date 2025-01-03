@@ -1,18 +1,19 @@
 import React, { useRef } from "react";
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, TextInputProps } from "react-native";
 import { useRouter } from "expo-router"; 
-import { COLORS, FONTS } from "../../constants/styles";
+import { COLORS, FONTS } from "@/constants/styles";
 
 const OtpScreen: React.FC = () => {
   const handleNext = () => {
-    router.navigate('/(Driver)/itineraire'); 
-  }
+    router.replace("/(Driver)/itineraire?tripStage=dropoff");
+  };
+  
   const router = useRouter();
-  const otpRefs = Array.from({ length: 5 }, () => useRef<TextInput>(null)); // Typage explicite des refs
+  const otpRefs = Array.from({ length: 5 }, () => useRef<TextInput>(null));
 
   const handleInputChange = (text: string, index: number) => {
     if (text.length === 1 && index < otpRefs.length - 1) {
-      otpRefs[index + 1].current?.focus(); // Utilisation du safe operator (?.)
+      otpRefs[index + 1].current?.focus();
     }
   };
 
