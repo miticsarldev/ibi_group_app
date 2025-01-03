@@ -100,6 +100,7 @@ export default function Layout() {
       <Drawer.Screen name="demandeVoiture" options={{ headerShown: false }} />
       <Drawer.Screen name="suceessDemande" options={{ headerShown: false }} />
       <Drawer.Screen name="parrainage" options={{ headerShown: false }} />
+      <Drawer.Screen name="otp" options={{ headerShown: false }} />
     </Drawer>
   );
 }

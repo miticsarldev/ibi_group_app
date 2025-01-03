@@ -1,23 +1,17 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
-import * as Location from "expo-location";  
-import { GestureHandlerRootView, PanGestureHandler, State, PanGestureHandlerGestureEvent } from 'react-native-gesture-handler';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { COLORS } from '../../constants/styles';
-import { useLocationStore } from '@/store/useStore';
-import LocationInput from "@/components/itineraire";
-import Map2 from '@/components/MapItineraire';
-import MapViewDirections from 'react-native-maps-directions';
-import MapView, { Marker } from 'react-native-maps';
+import React, { useEffect, useState } from "react";
+import { View, Text, Image, StyleSheet, TouchableOpacity, Dimensions, } from "react-native";
+import * as Location from "expo-location";
+import { GestureHandlerRootView, PanGestureHandler, State, PanGestureHandlerGestureEvent } from "react-native-gesture-handler";
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { COLORS } from "../../constants/styles";
+import { useLocationStore } from "@/store/useStore";
+import Map2 from "@/components/MapItineraire";
 
-const { height } = Dimensions.get('window');
+const { height } = Dimensions.get("window");
 const MIN_HEIGHT = height - 520;
 const MAX_HEIGHT = 0;
-const { height: screenHeight } = Dimensions.get("window");
-
-const GOOGLE_MAPS_APIKEY  = 'AIzaSyCVAsvOEIbDKET3Q6FRGNnptvfcWtY9HsI'; 
 
 type LocationType = {
   latitude: number;
@@ -28,44 +22,47 @@ type LocationType = {
 const Itineraire = () => {
   const { setUserLocation, setDestinationLocation } = useLocationStore();
   const router = useRouter();
-  const [hasPermission, setHasPermission] = useState<boolean>(false);
   const [userLocation, setUserLocationState] = useState<LocationType | null>(null);
   const [destination, setDestination] = useState<LocationType | null>(null);
 
   useEffect(() => {
     (async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
+      // Demande des permissions pour la localisation
+      const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
-        setHasPermission(false);
         return;
       }
 
-      let location = await Location.getCurrentPositionAsync({});
-
+      // Récupère la localisation de l'utilisateur
+      const location = await Location.getCurrentPositionAsync({});
       const address = await Location.reverseGeocodeAsync({
-        latitude: location.coords?.latitude!,
-        longitude: location.coords?.longitude!,
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
       });
 
       const userLoc: LocationType = {
-        latitude: location.coords?.latitude,
-        longitude: location.coords?.longitude,
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
         address: `${address[0].name}, ${address[0].region}`,
       };
 
       setUserLocation(userLoc);
       setUserLocationState(userLoc);
 
+      // Définit automatiquement la destination
+      const defaultDestination: LocationType = {
+        latitude: 12.6392,
+        longitude: -8.0029,
+        address: "Vôtre Client",
+      };
+
+      setDestination(defaultDestination);
+      setDestinationLocation(defaultDestination);
     })();
   }, []);
 
-  const handleDestinationSelect = (location: LocationType) => {
-    setDestination(location);
-    setDestinationLocation(location);
-  };
-
   const handleNext = () => {
-    router.navigate('/(Driver)/trajet');
+    router.navigate("/(Driver)/otp");
   };
 
   const translateY = useSharedValue(0);
@@ -108,63 +105,10 @@ const Itineraire = () => {
   };
 
   return (
-    <GestureHandlerRootView style={styles.container}> 
+    <GestureHandlerRootView style={styles.container}>
       {/* Carte avec Directions */}
       <View style={styles.mapContainer}>
-        <Map2 userLocation={userLocation} destination={destination}/>
-      </View>
-
-      {/* Composant KnownLocationInput */}
-      <View style={styles.inputContainer}>
-        <MapView style={{ flex: 1 }}
-          initialRegion={{
-            latitude: userLocation?.latitude || 0,
-            longitude: userLocation?.longitude || 0,
-            latitudeDelta: 0.01,
-            longitudeDelta: 0.01,
-          }}
-        >
-
-{userLocation && (
-            <Marker
-              coordinate={{
-                latitude: userLocation.latitude,
-                longitude: userLocation.longitude,
-              }}
-              title="Votre position"
-            />
-          )}
-          {destination && (
-            <Marker
-              coordinate={{
-                latitude: destination.latitude,
-                longitude: destination.longitude,
-              }}
-              title="Destination"
-            />
-          )}
-          {userLocation && destination && (
-            <MapViewDirections
-              origin={{
-                latitude: userLocation.latitude,
-                longitude: userLocation.longitude,
-              }}
-              destination={{
-                latitude: destination.latitude,
-                longitude: destination.longitude,
-              }}
-              apikey={GOOGLE_MAPS_APIKEY}
-              strokeWidth={4}
-              strokeColor={COLORS.primary}
-            />
-          )}
-
-        </MapView>
-        <LocationInput
-          initialLocation="Vôtre Client"
-          knownCoordinates={{ latitude: 12.6392, longitude: -8.0029 }}
-          handlePress={handleDestinationSelect}
-        />
+        <Map2 userLocation={userLocation} destination={destination} />
       </View>
 
       {/* Icône pour réafficher le panneau */}
@@ -191,14 +135,14 @@ const Itineraire = () => {
             <View>
               <Text style={styles.userName}>Aly Touré</Text>
               <Text style={styles.userDetails}>
-                {trajet.distance} ({trajet.temps}){'\n'}
+                {trajet.distance} ({trajet.temps}){"\n"}
                 {trajet.localisation}
               </Text>
             </View>
           </View>
           <Text style={styles.price}>Montant du trajet : {trajet.prix}</Text>
           <TouchableOpacity style={styles.actionButton} onPress={handleNext}>
-            <Text style={styles.actionButtonText}>Trajet Terminé</Text>
+            <Text style={styles.actionButtonText}>Passager Récuperer</Text>
           </TouchableOpacity>
         </Animated.View>
       </PanGestureHandler>
@@ -212,21 +156,13 @@ const styles = StyleSheet.create({
   },
   mapContainer: {
     flex: 1,
-    height: screenHeight * 0.6, 
-  },
-  inputContainer: {
-    position: "absolute",
-    top: 20,
-    left: 20,
-    right: 20,
-    zIndex: 1000,
   },
   detailsContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     padding: 20,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
@@ -236,19 +172,19 @@ const styles = StyleSheet.create({
   handleBar: {
     width: 40,
     height: 5,
-    backgroundColor: '#ccc',
+    backgroundColor: "#ccc",
     borderRadius: 2.5,
-    alignSelf: 'center',
+    alignSelf: "center",
     marginBottom: 10,
   },
   arrivalTime: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 10,
   },
   userInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 10,
   },
   userImage: {
@@ -259,33 +195,33 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   userDetails: {
     fontSize: 14,
-    color: '#666',
+    color: "#666",
   },
   price: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 20,
   },
   actionButton: {
     backgroundColor: COLORS.primary,
     padding: 12,
     borderRadius: 10,
-    alignItems: 'center',
+    alignItems: "center",
   },
   actionButtonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   expandButton: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 80,
     right: 20,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     padding: 10,
     borderRadius: 25,
     elevation: 5,
