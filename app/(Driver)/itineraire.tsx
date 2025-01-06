@@ -1,19 +1,79 @@
-import React, { useState } from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
-import MapView, { Marker, Polyline } from 'react-native-maps';
-import { GestureHandlerRootView, PanGestureHandler, State, PanGestureHandlerGestureEvent } from 'react-native-gesture-handler';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import { COLORS } from '../../constants/styles';
+import React, { useEffect, useState } from "react";
+import { View, Text, Image, StyleSheet, TouchableOpacity, Dimensions, } from "react-native";
+import * as Location from "expo-location";
+import { GestureHandlerRootView, PanGestureHandler, State, PanGestureHandlerGestureEvent } from "react-native-gesture-handler";
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { COLORS } from "../../constants/styles";
+import { useLocationStore } from "@/store/useStore";
+import Map2 from "@/components/MapItineraire";  
+import { useSearchParams } from "expo-router/build/hooks";
 
-const { height } = Dimensions.get('window');
+
+const { height } = Dimensions.get("window");
 const MIN_HEIGHT = height - 520;
 const MAX_HEIGHT = 0;
 
+type LocationType = {
+  latitude: number;
+  longitude: number;
+  address: string;
+};
+
 const Itineraire = () => {
-  const handleNext = () => {
-    router.navigate('/(Driver)/trajet');
+  const { setUserLocation, setDestinationLocation } = useLocationStore();
+  const router = useRouter();
+  const [userLocation, setUserLocationState] = useState<LocationType | null>(null);
+  const [destination, setDestination] = useState<LocationType | null>(null); 
+  useEffect(() => {
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") return;
+
+      const location = await Location.getCurrentPositionAsync({});
+      const address = await Location.reverseGeocodeAsync({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      });
+
+      const userLoc: LocationType = {
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        address: `${address[0]?.name ?? ""}, ${address[0]?.region ?? ""}`,
+      };
+
+      setUserLocation(userLoc);
+      setUserLocationState(userLoc);
+
+      const defaultDestination: LocationType = {
+        latitude: 12.6392,
+        longitude: -8.0029,
+        address: "Destination Client",
+      };
+
+      setDestination(defaultDestination);
+      setDestinationLocation(defaultDestination);
+    })();
+  }, []);  
+
+  const searchParams = useSearchParams();
+  const [tripStage, setTripStage] = useState<"pickup" | "dropoff">("pickup");
+
+  useEffect(() => {
+    const stage = searchParams.get("tripStage") as "pickup" | "dropoff" | null;
+    if (stage === "pickup" || stage === "dropoff") {
+      setTripStage(stage); // Mise à jour de l'état
+    }
+  }, [searchParams]);
+  
+  const handleNextStage = () => {
+    if (tripStage === "pickup") {
+      router.push("/(Driver)/otp");
+    } else if (tripStage === "dropoff") {
+      alert("Trajet terminé !");
+      router.push("/(Driver)/trajet");
+    }
   };
 
   const translateY = useSharedValue(0);
@@ -44,7 +104,7 @@ const Itineraire = () => {
     transform: [{ translateY: translateY.value }],
   }));
 
-  const trajet = {
+    const trajet = {
     id: 1,
     type: "Passager",
     localisation: "Sotuba à Yirimadio",
@@ -56,34 +116,11 @@ const Itineraire = () => {
   };
 
   return (
-    <GestureHandlerRootView style={styles.container}> 
+    <GestureHandlerRootView style={styles.container}>
       {/* Carte avec Directions */}
-      <MapView
-        style={styles.map}
-        initialRegion={{
-          latitude: 12.6392,
-          longitude: -8.0029,
-          latitudeDelta: 0.05,
-          longitudeDelta: 0.05,
-        }}
-      >
-        <Marker coordinate={{ latitude: 12.6392, longitude: -8.0029 }} title="Départ">
-          <Image source={require('../../assets/image/ibi.png')} style={{ width: 30, height: 30 }} />
-        </Marker>
-
-        <Marker coordinate={{ latitude: 12.6500, longitude: -8.0100 }} title="Destination">
-          <Ionicons name="location-sharp" size={40} color="#00A76E" />
-        </Marker>
-
-        <Polyline
-          coordinates={[
-            { latitude: 12.6392, longitude: -8.0029 },
-            { latitude: 12.6500, longitude: -8.0100 },
-          ]}
-          strokeColor="#0890FE"
-          strokeWidth={4}
-        />
-      </MapView>
+      <View style={styles.mapContainer}>
+        <Map2 userLocation={userLocation} destination={destination} />
+      </View>
 
       {/* Icône pour réafficher le panneau */}
       {isCollapsed && (
@@ -103,20 +140,24 @@ const Itineraire = () => {
       >
         <Animated.View style={[styles.detailsContainer, animatedStyle]}>
           <View style={styles.handleBar} />
-          <Text style={styles.arrivalTime}>Heure d’arrivée : 15h35</Text>
+          <Text style={styles.arrivalTime}>Heure estimée : 15h35</Text>
           <View style={styles.userInfo}>
             <Image source={trajet.image} style={styles.userImage} />
             <View>
               <Text style={styles.userName}>Aly Touré</Text>
               <Text style={styles.userDetails}>
-                {trajet.distance} ({trajet.temps}){'\n'}
+                {trajet.distance} ({trajet.temps}){"\n"}
                 {trajet.localisation}
               </Text>
             </View>
           </View>
-          <Text style={styles.price}>Montant du trajet : {trajet.prix}</Text>
-          <TouchableOpacity style={styles.actionButton} onPress={handleNext}>
-            <Text style={styles.actionButtonText}>Trajet Terminé</Text>
+          <Text style={styles.price}>
+            {tripStage === "pickup" ? "À récupérer" : "À déposer"} : {trajet.prix}
+          </Text>
+          <TouchableOpacity style={styles.actionButton} onPress={handleNextStage}>
+            <Text style={styles.actionButtonText}>
+              {tripStage === "pickup" ? "Passager récupéré" : "Trajet terminé"}
+            </Text>
           </TouchableOpacity>
         </Animated.View>
       </PanGestureHandler>
@@ -128,15 +169,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  map: {
+  mapContainer: {
     flex: 1,
   },
   detailsContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     padding: 20,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
@@ -146,19 +187,19 @@ const styles = StyleSheet.create({
   handleBar: {
     width: 40,
     height: 5,
-    backgroundColor: '#ccc',
+    backgroundColor: "#ccc",
     borderRadius: 2.5,
-    alignSelf: 'center',
+    alignSelf: "center",
     marginBottom: 10,
   },
   arrivalTime: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 10,
   },
   userInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 10,
   },
   userImage: {
@@ -169,33 +210,33 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   userDetails: {
     fontSize: 14,
-    color: '#666',
+    color: "#666",
   },
   price: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 20,
   },
   actionButton: {
     backgroundColor: COLORS.primary,
     padding: 12,
     borderRadius: 10,
-    alignItems: 'center',
+    alignItems: "center",
   },
   actionButtonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   expandButton: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 80,
     right: 20,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     padding: 10,
     borderRadius: 25,
     elevation: 5,

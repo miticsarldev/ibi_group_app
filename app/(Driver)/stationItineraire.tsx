@@ -1,54 +1,143 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
-import MapView, { Marker, Polyline } from 'react-native-maps';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { COLORS, SIZES } from "../../constants/styles"; 
-import { router } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { View, StyleSheet, Text, Dimensions, TouchableOpacity } from 'react-native';
+import * as Location from "expo-location";   
+import { GestureHandlerRootView, PanGestureHandler, PanGestureHandlerGestureEvent, State } from 'react-native-gesture-handler';
+import { COLORS } from "../../constants/styles"; 
+import { useRouter } from 'expo-router'; 
+import { useLocationStore } from '@/store/useStore';  
+import Map2 from '@/components/MapItineraire';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+  
+const { height } = Dimensions.get("window");
+const MIN_HEIGHT = height - 520;
+const MAX_HEIGHT = 0;
 
-const { height } = Dimensions.get('window');
+type LocationType = {
+  latitude: number;
+  longitude: number;
+  address: string;
+};
 
 const StationElectrique = () => {
-  return (
-    <GestureHandlerRootView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.push("/(Driver)/station")}>
-          <Ionicons name="arrow-back" size={20} color="#000" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Itineraire</Text>
-      </View>
-      <MapView
-        style={styles.map}
-        initialRegion={{
+  const { setUserLocation, setDestinationLocation } = useLocationStore();
+  const router = useRouter();
+  const [userLocation, setUserLocationState] = useState<LocationType | null>(null);
+  const [destination, setDestination] = useState<LocationType | null>(null);
+  const translateY = useSharedValue(0);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  
+  useEffect(() => {
+      (async () => {
+        // Demande des permissions pour la localisation
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") {
+          return;
+        }
+  
+        // Récupère la localisation de l'utilisateur
+        const location = await Location.getCurrentPositionAsync({});
+        const address = await Location.reverseGeocodeAsync({
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        });
+  
+        const userLoc: LocationType = {
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+          address: `${address[0].name}, ${address[0].region}`,
+        };
+  
+        setUserLocation(userLoc);
+        setUserLocationState(userLoc);
+  
+        // Définit automatiquement la destination
+        const defaultDestination: LocationType = {
           latitude: 12.6392,
           longitude: -8.0029,
-          latitudeDelta: 0.05,
-          longitudeDelta: 0.05,
+          address: "Vôtre Client",
+        };
+  
+        setDestination(defaultDestination);
+        setDestinationLocation(defaultDestination);
+      })();
+    }, []);
+
+      const gestureHandler = (event: PanGestureHandlerGestureEvent) => {
+        const { translationY } = event.nativeEvent;
+        translateY.value = Math.min(MIN_HEIGHT, Math.max(MAX_HEIGHT, translationY));
+      };
+    
+      const gestureEndHandler = (event: PanGestureHandlerGestureEvent) => {
+        const { translationY } = event.nativeEvent;
+        if (translationY > height / 4) {
+          translateY.value = withSpring(MIN_HEIGHT);
+          setIsCollapsed(true);
+        } else {
+          translateY.value = withSpring(MAX_HEIGHT);
+          setIsCollapsed(false);
+        }
+      };
+    
+      const handleExpand = () => {
+        translateY.value = withSpring(MAX_HEIGHT);
+        setIsCollapsed(false);
+      };
+    
+      const animatedStyle = useAnimatedStyle(() => ({
+        transform: [{ translateY: translateY.value }],
+      }));
+
+      const station = {
+        id: 1,
+        type: "Electric",
+        localisation: "Sotuba", 
+        temps: "5 mins",
+        distance: "800m",  
+      };
+
+      const handleNext = () => {
+        router.navigate("/(Driver)/station");
+      };
+
+  return (
+    <GestureHandlerRootView style={styles.container}>
+      {/* Carte avec Directions */}
+      <View style={styles.mapContainer}>
+        <Map2 userLocation={userLocation} destination={destination}/>
+      </View> 
+      
+      {/* Icône pour réafficher le panneau */}
+      {isCollapsed && (
+        <TouchableOpacity style={styles.expandButton} onPress={handleExpand}>
+          <Ionicons name="chevron-up" size={30} color="#000" />
+        </TouchableOpacity>
+      )}
+
+      {/* Détails glissables */}
+      <PanGestureHandler
+        onGestureEvent={gestureHandler}
+        onHandlerStateChange={(event) => {
+          if (event.nativeEvent.state === State.END) {
+            gestureEndHandler(event);
+          }
         }}
       >
-        {/* Marker pour la voiture */}
-        <Marker
-          coordinate={{ latitude: 12.6392, longitude: -8.0029 }}
-          title="Voiture"
-        />
-
-        {/* Marker pour la station électrique */}
-        <Marker
-          coordinate={{ latitude: 12.6450, longitude: -8.0050 }}
-          title="Station Électrique"
-        />
-
-        {/* Polyline pour simuler l'itinéraire */}
-        <Polyline
-          coordinates={[
-            { latitude: 12.6392, longitude: -8.0029 },
-            { latitude: 12.6450, longitude: -8.0050 },
-          ]}
-          strokeColor="#52D5BA"
-          strokeWidth={4}
-        />
-      </MapView> 
+        <Animated.View style={[styles.detailsContainer, animatedStyle]}>
+          <View style={styles.handleBar} />
+          <View style={styles.hr} />
+            <Text style={styles.boldText}>
+              Point de recharge sise à {station.localisation}
+            </Text>
+            <Text style={styles.centeredText}>
+              <Ionicons name="location" size={14} /> {station.distance} ({station.temps})
+            </Text>
+          <View style={styles.hr} />
+          <TouchableOpacity style={styles.actionButton} onPress={handleNext}>
+            <Text style={styles.actionButtonText}>Rétour</Text>
+          </TouchableOpacity>
+        </Animated.View>
+      </PanGestureHandler>
     </GestureHandlerRootView>
   );
 };
@@ -60,38 +149,73 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingTop: 40,
   },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 20,
+  mapContainer: {
+    flex: 1, 
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    // marginLeft: 10,
-    width: "100%",
-    color: "#000",
-    textAlign: "center"
-  },
-  map: {
-    width: '100%',
-    height: '100%',
-  },
-  actionButton: {
-    position: 'absolute',
-    bottom: 50,
+  inputContainer: {
+    position: "absolute",
+    top: 20,
     left: 20,
     right: 20,
+    zIndex: 1000,
+  },
+  detailsContainer: {
+    backgroundColor: "#fff",
+    padding: 20,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: height / 4,
+    elevation: 5,
+  },
+  handleBar: {
+    width: 40,
+    height: 5,
+    backgroundColor: "#ccc",
+    borderRadius: 2.5,
+    alignSelf: "center",
+    marginBottom: 10,
+  },
+  hr: {
+    borderBottomColor: '#E5E7EB',
+    borderBottomWidth: 1,
+    marginVertical: 10,
+  },
+  boldText: {
+    fontWeight: "bold",
+    fontSize: 16,
+    textAlign: "center",
+    marginBottom: 5,
+  },
+  centeredText: {
+    fontSize: 14,
+    textAlign: "center",
+    color: "#555",
+    flexDirection: "row",
+  },  
+  actionButton: {
     backgroundColor: COLORS.primary,
-    padding: SIZES.padding,
-    borderRadius: SIZES.radius,
-    alignItems: 'center',
+    padding: 12,
+    borderRadius: 10,
+    alignItems: "center",
   },
   actionButtonText: {
-    color: COLORS.white,
-    fontWeight: 'bold',
-    fontSize: SIZES.font,
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
   },
+  expandButton: {
+    position: "absolute",
+    bottom: 50,
+    right: 20,
+    backgroundColor: "#fff",
+    padding: 10,
+    borderRadius: 25,
+    elevation: 5,
+  }
 });
 
 export default StationElectrique;
