@@ -15,7 +15,7 @@ const Connexion = () => {
     //   Alert.alert('Erreur', 'Veuillez remplir tous les champs.');
     //   return;
     // }
-    router.replace('/Home');
+    router.replace('/(Utilisateurs)/(tabs)/home');
   };
 
   return (

@@ -19,7 +19,7 @@ const SplashScreen = () => {
 
     // Naviguer vers l'écran Onboarding après 5 secondes
     const timer = setTimeout(() => {
-      router.replace("/(Utilisateurs)/(tabs)/home");
+      router.replace("/(Onboarding)/Screen1");
     }, 5000);
 
     return () => clearTimeout(timer);
