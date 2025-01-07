@@ -41,6 +41,7 @@ export default function RootLayout() {
         <Stack.Screen name="(UserLogin)" options={{ headerShown: false }} />
         <Stack.Screen name="(Utilisateurs)" options={{ headerShown: false }} />
         <Stack.Screen name="(Details)" options={{ headerShown: false }} />
+        <Stack.Screen name="(Driver)" options={{ headerShown: false }} />
       </Stack>
 
       <StatusBar style="auto" />
