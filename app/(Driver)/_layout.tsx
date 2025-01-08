@@ -1,21 +1,60 @@
-import React, { useEffect } from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, Image, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from "@expo/vector-icons";
 import { DrawerContentScrollView, DrawerItem } from "@react-navigation/drawer";
 import { router, usePathname } from "expo-router";
 import Drawer from "expo-router/drawer";
-import { COLORS } from '../../constants/styles';
+import { COLORS } from '@/constants/styles'; 
+import { Deconnexion } from '@/services/authService';
 
 const CustomDrawerContent = (props:any) => {
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error'; visible: boolean }>({
+    message: '',
+    type: 'success',
+    visible: false,
+  });
+
+  const showToast = (message: string, type: 'success' | 'error') => {
+    setToast({ message, type, visible: true });
+  };
+
+  const handleLogout = async () => {
+    try {
+      Alert.alert(
+        'Confirmation',
+        'Voulez-vous vraiment vous déconnecter ?',
+        [
+          {
+            text: 'Non',
+            style: 'cancel',
+          },
+          {
+            text: 'Oui',
+            onPress: async () => {
+              try {
+                await Deconnexion();
+                showToast('Déconnexion réussie.', 'success');
+                router.replace('/(UserLogin)/Connexion');
+              } catch (error) {
+                console.error('Erreur lors de la déconnexion :', error);
+                showToast('Une erreur est survenue lors de la déconnexion.', 'error');
+              }
+            },
+          },
+        ],
+        { cancelable: true }
+      );
+    } catch (error) {
+      console.error('Erreur lors de la déconnexion :', error);
+      showToast('Une erreur est survenue lors de la déconnexion.', 'error');
+    }
+  };
+
   const pathname = usePathname();
 
   useEffect(() => {
     console.log(pathname);
   }, [pathname]);
-
-  const handleLogout = () => {
-    console.log("Déconnexion effectuée");
-  };
 
   type IoniconName = "car-sport" | "document-text" | "flash" | "location-outline" | "warning" | "settings";
 
@@ -92,8 +131,7 @@ export default function Layout() {
       <Drawer.Screen name="location" options={{ headerShown: true, title: 'Location' }} />
       <Drawer.Screen name="signaler" options={{ headerShown: true, title: 'Signaler' }} />
       <Drawer.Screen name="succees" options={{ headerShown: false }} />
-      <Drawer.Screen name="itineraire" options={{ headerShown: true, title: 'Itineraire' }} />
-      <Drawer.Screen name="inscriptionDriver" options={{ headerShown: false }} />
+      <Drawer.Screen name="itineraire" options={{ headerShown: true, title: 'Itineraire' }} /> 
       <Drawer.Screen name="editPassword" options={{ headerShown: false }} />
       <Drawer.Screen name="profil" options={{ headerShown: false }} />
       <Drawer.Screen name="stationItineraire" options={{ headerShown: true, title: 'Itineraire' }} />

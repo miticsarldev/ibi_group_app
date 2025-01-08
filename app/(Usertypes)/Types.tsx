@@ -11,14 +11,20 @@ const Types = () => {
     setModalVisible(true);
   };
 
-  const handleNavigate = () => {
+  const handleNavigate = (role:any) => {
+    if (!role) {
+      alert('Veuillez sélectionner un rôle valide.');
+      return;
+    }
     setModalVisible(false);
-    router.push('/(Driver)/inscriptionDriver');
-  }
+    router.push({
+      pathname: '/(UserLogin)/Inscription',
+      params: { role },
+    });
+  };
 
   return (
-    <View style={styles.container}>
-      {/* Logo */}
+    <View style={styles.container}> 
       <Image
         source={require('../../assets/image/Logo.png')} 
         style={styles.logo}
@@ -31,10 +37,10 @@ const Types = () => {
       {/* Carte 1 : Utilisateur */}
       <TouchableOpacity
         style={styles.card}
-        onPress={() => router.push('/(UserLogin)/Inscription')} // Navigue vers la page Type
+        onPress={() => handleNavigate('Utilisateur')}
       >
         <Image
-          source={require('../../assets/image/utilisateur.jpg')} // Remplacez par l'image "Utilisateur"
+          source={require('../../assets/image/utilisateur.jpg')}
           style={styles.cardImage}
         />
         <View style={styles.cardTextContainer}>
@@ -75,7 +81,7 @@ const Types = () => {
             <View style={styles.modalOptions}>
               <TouchableOpacity
                 style={[styles.optionCard, styles.optionIBI]}
-                onPress={handleNavigate}
+                onPress={() => handleNavigate('Chauffeur IBI')}
               >
                 <Image
                   source={require('../../assets/image/voiture.png')}
@@ -85,7 +91,7 @@ const Types = () => {
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.optionCard, styles.optionPersonal]}
-                onPress={handleNavigate}
+                onPress={() => handleNavigate('Chauffeur Personnel')}
               >
                 <Image
                   source={require('../../assets/image/personnel.png')}
