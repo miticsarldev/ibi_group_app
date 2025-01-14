@@ -13,18 +13,22 @@ import PayModal from "./PayModal";
 type PriceModalProps = {
   visible: boolean;
   onClose: () => void;
+  destination: string; 
+  userLocation: { latitude: number; longitude: number; address: string } | null;
 };
 
-const PriceModal: React.FC<PriceModalProps> = ({ visible, onClose }) => {
+const PriceModal: React.FC<PriceModalProps> = ({ visible, onClose, destination, userLocation }) => {
+ 
+
   const [selectedType, setSelectedType] = useState<string | null>(null);
-  const [selectedPrice, setSelectedPrice] = useState<string | null>(null);
+const [selectedPrice, setSelectedPrice] = useState<string | null>(null);
   const [isPayModalVisible, setIsPayModalVisible] = useState(false);
 
   const handleSelectOption = (type: string, price: string) => {
     setSelectedType(type);
     setSelectedPrice(price);
-    onClose(); // Ferme la modal de prix
-    setTimeout(() => setIsPayModalVisible(true), 300); // Ouvre la modal de paiement après une courte attente
+    onClose(); // Ferme le PriceModal
+    setTimeout(() => setIsPayModalVisible(true), 300); // Ouvre le PayModal
   };
 
   const handlePayModalClose = () => {
@@ -83,11 +87,13 @@ const PriceModal: React.FC<PriceModalProps> = ({ visible, onClose }) => {
       </Modal>
 
       <PayModal
-        visible={isPayModalVisible}
-        onClose={handlePayModalClose}
-        type={selectedType || ""}
-        price={selectedPrice || ""}
-      />
+  visible={isPayModalVisible}
+  onClose={handlePayModalClose}
+  type={selectedType || ""}
+  price={selectedPrice || ""}
+  destination={destination || ""}
+  userLocation={userLocation}
+/>
     </>
   );
 };

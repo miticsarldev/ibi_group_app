@@ -14,6 +14,7 @@ import PriceModal from "./PriceModal";
 type CustomModalProps = {
   visible: boolean;
   onClose: () => void;
+  userLocation: { latitude: number; longitude: number; address: string } | null;
   onDestinationSelect: (location: {
     latitude: number;
     longitude: number;
@@ -25,14 +26,14 @@ const CustomModal: React.FC<CustomModalProps> = ({
   visible,
   onClose,
   onDestinationSelect,
+  userLocation,
 }) => {
   const [priceModalVisible, setPriceModalVisible] = useState(false);
 
   const openPriceModal = () => {
-    // Fermez le CustomModal avant d'ouvrir le PriceModal
-    onClose();
+    onClose(); // Ferme le CustomModal
     setTimeout(() => {
-      setPriceModalVisible(true);
+      setPriceModalVisible(true); // Ouvre le PriceModal
     }, 300); // Délai pour éviter les conflits visuels
   };
 
@@ -40,6 +41,8 @@ const CustomModal: React.FC<CustomModalProps> = ({
     setPriceModalVisible(false);
   };
 
+  const [selectedDestination, setSelectedDestination] = useState<string | null>(null);
+  
   return (
     <>
       {/* Main Custom Modal */}
@@ -67,12 +70,16 @@ const CustomModal: React.FC<CustomModalProps> = ({
             {/* Destination Input */}
             <GoogleTextInput
               icon={icons.search}
-              handlePress={onDestinationSelect}
+              handlePress={(location) => {
+                setSelectedDestination(location.address); // Stocke l'adresse sélectionnée
+                onDestinationSelect(location); // Passe les données au parent si nécessaire
+              }}
               containerStyle={styles.destinationInput}
               textInputBackgroundColor="#f5f5f5"
             />
-
-            <Text style={styles.noAddressText}>Aucune adresse choisie</Text>
+          <Text style={styles.noAddressText}>
+            {selectedDestination ? selectedDestination : "Aucune adresse choisie"}
+          </Text>
 
             {/* Confirm Button */}
             <TouchableOpacity
@@ -89,6 +96,8 @@ const CustomModal: React.FC<CustomModalProps> = ({
       <PriceModal
         visible={priceModalVisible}
         onClose={closePriceModal}
+        destination={selectedDestination || ""} 
+        userLocation={userLocation}
       />
     </>
   );

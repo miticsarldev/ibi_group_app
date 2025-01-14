@@ -29,6 +29,11 @@ const Home = () => {
   const router = useRouter();
   const [hasPermission, setHasPermission] = useState<boolean>(false);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
+  const [userLocation, setUserLocationState] = useState<{
+    latitude: number;
+    longitude: number;
+    address: string;
+  } | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -44,11 +49,14 @@ const Home = () => {
         longitude: location.coords?.longitude!,
       });
 
-      setUserLocation({
+      const userLocationData = {
         latitude: location.coords?.latitude,
         longitude: location.coords?.longitude,
         address: `${address[0].name}, ${address[0].region}`,
-      });
+      };
+
+      setUserLocation(userLocationData); // Stockage global
+      setUserLocationState(userLocationData); // Stockage local pour passer à CustomModal
     })();
   }, []);
 
@@ -60,7 +68,7 @@ const Home = () => {
     setDestinationLocation(location);
     setModalVisible(false);
     setTimeout(() => {
-      router.replace("/(Utilisateurs)/Adresse");
+      ;
     }, 3000);
   };
 
@@ -117,6 +125,7 @@ const Home = () => {
             visible={modalVisible}
             onClose={() => setModalVisible(false)}
             onDestinationSelect={handleDestinationPress}
+            userLocation={userLocation}
           />
         </SafeAreaView>
       </TouchableWithoutFeedback>

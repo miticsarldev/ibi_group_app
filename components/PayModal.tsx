@@ -3,71 +3,76 @@ import {
   Modal,
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
-  Image,
+  StyleSheet,
 } from "react-native";
-import { images } from "@/constants"; // Assurez-vous que vos images sont correctement définies
+import { db } from "../firebaseConfig"; 
+import { addDoc, collection, serverTimestamp } from "firebase/firestore"; 
 
 type PayModalProps = {
   visible: boolean;
   onClose: () => void;
   type: string;
   price: string;
+  destination: string;
+  userLocation: { latitude: number; longitude: number; address: string } | null;
 };
 
-const PayModal: React.FC<PayModalProps> = ({ visible, onClose, type, price }) => {
-  // Logique pour sélectionner l'image en fonction du type
-  const getImageForType = (vehicleType: string) => {
-    switch (vehicleType) {
-      case "Voiture":
-        return images.mobil; // Image associée à "Voiture"
-      case "Moto":
-        return images.moto; // Image associée à "Moto"
-      default:
-        return images.mobil; // Une image par défaut si aucun type ne correspond
+const PayModal: React.FC<PayModalProps> = ({
+  visible,
+  onClose,
+  type,
+  price,
+  destination,
+  userLocation
+}) => {
+  const handlePayment = async () => {
+    const tripData = {
+      destination,
+      type,
+      price,
+      userLocation,
+      status: "Encours",
+      createdAt: serverTimestamp(), 
+    };
+
+    try {
+     
+      await addDoc(collection(db, "trajet"), tripData);
+      console.log("Données du trajet envoyées avec succès !");
+      onClose(); 
+    } catch (error) {
+      console.error("Erreur lors de l'envoi des données :", error);
     }
   };
 
   return (
-    <Modal animationType="slide" transparent={true} visible={visible}>
+    <Modal
+      animationType="slide"
+      transparent={true}
+      visible={visible}
+      onRequestClose={onClose}
+    >
       <View style={styles.modalContainer}>
         <View style={styles.modalContent}>
-          {/* Bouton de fermeture */}
-          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-            <Text style={styles.closeButtonText}>×</Text>
+          <Text style={styles.modalTitle}>Confirmez votre paiement</Text>
+          <View style={styles.infoContainer}>
+            <Text style={styles.infoText}>Destination : {destination}</Text>
+            <Text style={styles.infoText}>Type de véhicule : {type}</Text>
+            <Text style={styles.infoText}>Prix : {price}</Text>
+          </View>
+          <TouchableOpacity style={styles.confirmButton} onPress={handlePayment}>
+            <Text style={styles.confirmButtonText}>Confirmer et Payer</Text>
           </TouchableOpacity>
-
-          <Text style={styles.modalTitle}>Mode de paiement</Text>
-          <View style={styles.row}>
-            {/* Image basée sur le type */}
-            <Image source={getImageForType(type)} style={styles.optionIcon} />
-            <View style={styles.textContainer}>
-              <Text style={styles.detailText}>
-                {type} - <Text style={styles.seatsText}>4 P</Text>
-              </Text>
-              <Text style={styles.subText}>
-                {type === "Voiture"
-                  ? "Voiture électrique confortable"
-                  : "Rapide et sécurisée"}
-              </Text>
-            </View>
-            <Text style={styles.priceText}>{price}</Text>
-          </View>
-
-          <View style={styles.paymentRow}>
-            <Text style={styles.paymentLabel}>Mode de paiement</Text>
-            <Text style={styles.paymentText}>Espèces</Text>
-          </View>
-
-          <TouchableOpacity style={styles.confirmButton} onPress={onClose}>
-            <Text style={styles.confirmButtonText}>Confirmer</Text>
+          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+            <Text style={styles.closeButtonText}>Annuler</Text>
           </TouchableOpacity>
         </View>
       </View>
     </Modal>
   );
 };
+
 
 const styles = StyleSheet.create({
   modalContainer: {
@@ -77,93 +82,46 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: "#fff",
+    padding: 20,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    padding: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
-    position: "relative",
-  },
-  closeButton: {
-    position: "absolute",
-    top: 10,
-    right: 10,
-    zIndex: 10,
-    width: 30,
-    height: 30,
-    justifyContent: "center",
+    width: "100%",
     alignItems: "center",
-    backgroundColor: "#eee",
-    borderRadius: 15,
-  },
-  closeButtonText: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#333",
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    marginBottom: 25,
-    textAlign: "center",
+    marginBottom: 20,
   },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 30,
+  infoContainer: {
+    width: "100%",
+    marginBottom: 20,
   },
-  optionIcon: {
-    width: 50,
-    height: 50,
-    marginRight: 10,
-  },
-  textContainer: {
-    flex: 1,
-  },
-  detailText: {
+  infoText: {
     fontSize: 16,
-    fontWeight: "bold",
-  },
-  seatsText: {
-    color: "#555",
-    fontSize: 14,
-  },
-  subText: {
-    fontSize: 12,
-    color: "#777",
-  },
-  priceText: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#28a745",
-  },
-  paymentRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 30,
-  },
-  paymentLabel: {
-    fontSize: 16,
-    color: "#555",
-  },
-  paymentText: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#28a745",
+    marginBottom: 10,
   },
   confirmButton: {
     backgroundColor: "#28a745",
-    paddingVertical: 15,
+    paddingVertical: 12,
+    paddingHorizontal: 30,
     borderRadius: 30,
-    alignItems: "center",
+    marginBottom: 10,
   },
   confirmButtonText: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "bold",
+  },
+  closeButton: {
+    backgroundColor: "#ccc",
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 30,
+  },
+  closeButtonText: {
+    color: "#333",
+    fontSize: 16,
   },
 });
 
