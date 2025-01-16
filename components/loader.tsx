@@ -6,7 +6,7 @@ const Blur = ({ loading }: { loading: boolean }) => (
       <View style={styles.loaderContainer}>
         <BlurView
           style={styles.absolute}
-          intensity={10} // Remplacez `blurType` par `intensity`
+          intensity={10}
         >
           <ActivityIndicator size="large" color="green" />
         </BlurView>

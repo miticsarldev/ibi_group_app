@@ -1,4 +1,3 @@
-import { styles } from "@gorhom/bottom-sheet/lib/typescript/components/bottomSheetScrollable/BottomSheetFlashList";
 import React, { useState } from "react";
 import { ActivityIndicator, View } from "react-native";
 import MapView, { Marker } from "react-native-maps";
@@ -6,16 +5,9 @@ import MapViewDirections from "react-native-maps-directions";
 
 const directionsAPI = process.env.EXPO_PUBLIC_DIRECTIONS_API_KEY;
 
-export type LocationType = {
-  latitude: number;
-  longitude: number;
-  address?: string;
-};
-
 type Map2Props = {
-  userLocation: LocationType | null;
-  destination: LocationType | null;
-  stations?: LocationType[];
+  userLocation: { latitude: number; longitude: number } | null;
+  destination: { latitude: number; longitude: number } | null;
 };
 
 // Icônes personnalisées
@@ -52,8 +44,19 @@ const drivers = [
   },
 ];
 
-const Map2: React.FC<Map2Props> = ({ userLocation, destination }) => {
+const Map2: React.FC<Map2Props> = ({ userLocation, destination }) => { 
   const [markers, setMarkers] = useState(drivers);
+  if (!userLocation || !destination)
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="small" color="#000" />
+      </View>
+    );
+
+  const coordinates = [
+    { latitude: userLocation.latitude, longitude: userLocation.longitude },
+    { latitude: destination.latitude, longitude: destination.longitude },
+  ];
 
   const defaultRegion = {
     latitude: 12.5781975,
@@ -71,12 +74,7 @@ const Map2: React.FC<Map2Props> = ({ userLocation, destination }) => {
       }
     : defaultRegion;
 
-  if (!userLocation)
-    return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="small" color="#000" />
-      </View>
-    );
+
 
   return (
     <MapView
@@ -93,7 +91,7 @@ const Map2: React.FC<Map2Props> = ({ userLocation, destination }) => {
           }}
           // title={marker.name} 
           title="Point de départ"
-          image={icons.car}
+          // image={icons.car}
         />
       ))}
 
@@ -105,7 +103,7 @@ const Map2: React.FC<Map2Props> = ({ userLocation, destination }) => {
               longitude: destination.longitude,
             }}
             title="Destination"
-            image={icons.location}
+            // image={icons.location}
           />
 
           <MapViewDirections

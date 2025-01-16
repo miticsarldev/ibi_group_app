@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingTop: 50, // Ajuste l'espacement pour éviter le débordement
+    paddingTop: 50,
     paddingBottom: 10,
     backgroundColor: "#f5f5f5",
   },

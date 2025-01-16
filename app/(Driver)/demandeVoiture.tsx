@@ -1,16 +1,141 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, Button, Image, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TextInput, Image, TouchableOpacity } from 'react-native';
 import Checkbox from 'expo-checkbox';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { COLORS, FONTS, SIZES } from '../../constants/styles';
+import { COLORS, FONTS, SIZES } from '@/constants/styles'; 
+import DateTimePickerModal from "react-native-modal-datetime-picker";
+import { vehicule } from '@/interface/vehicule';
+import { useSearchParams } from 'expo-router/build/hooks';
+import  { fetchVehiculeDetails, createReservation }  from '@/services/reservationService'; 
+import ToastMessage from '@/components/ToastMessage';
 
 const DemandeVoiture = () => {
+  const searchParams = useSearchParams(); 
+  const [vehiculeId, setVehiculeId] = useState<string | null>(null);
+  const [vehiculeType, setVehiculeType] = useState<string | null>(null);
+  const [vehiculeDetails, setVehiculeDetails] = useState<vehicule | null>(null);
   const [startDate, setStartDate] = useState('');
   const [startTime, setStartTime] = useState('');
   const [endDate, setEndDate] = useState('');
   const [endTime, setEndTime] = useState('');
+  const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
+  const [isTimePickerVisible, setTimePickerVisibility] = useState(false);
+  const [currentPicker, setCurrentPicker] = useState('startDate');
   const [paymentMethod, setPaymentMethod] = useState('');
+  const [totalAmount, setTotalAmount] = useState(0); 
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState<'success' | 'error'>('success');
+  const [toastVisible, setToastVisible] = useState(false);
+
+  useEffect(() => {
+    try {
+      const id = searchParams.get('id');
+      const type = searchParams.get('type');
+  
+      console.log('Paramètres reçus:', { id, type });
+  
+      if (id && type) {
+        setVehiculeId(id);
+        setVehiculeType(type);
+        console.log('Véhicule ID:', id);
+        console.log('Véhicule Type:', type);
+      } else {
+        alert('Aucun véhicule sélectionné.');
+      }
+    } catch (error) {
+      console.error('Erreur lors de la récupération des paramètres :', error);
+      alert('Une erreur est survenue lors de la récupération des informations.');
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    const fetchDetails = async () => {
+      try {
+        if (vehiculeId) {
+          const details = await fetchVehiculeDetails(vehiculeId);
+          setVehiculeDetails(details as vehicule);
+          console.log('Détails du véhicule récupérés :', details);
+        }
+      } catch (error) {
+        console.error('Erreur lors de la récupération des détails du véhicule :', error);
+      }
+    };
+
+    fetchDetails();
+  }, [vehiculeId]);
+
+  const tarifHoraire = 500;
+
+  const handleConfirmDate = (date:any) => {
+    const formattedDate = date.toISOString().split('T')[0]; 
+    if (currentPicker === 'startDate') setStartDate(formattedDate);
+    if (currentPicker === 'endDate') setEndDate(formattedDate);
+    setDatePickerVisibility(false);
+  };
+  
+  const handleConfirmTime = (time:any) => {
+    const formattedTime = time.toTimeString().split(' ')[0].substring(0, 5);
+    if (currentPicker === 'startTime') setStartTime(formattedTime);
+    if (currentPicker === 'endTime') setEndTime(formattedTime);
+    setTimePickerVisibility(false);
+  };
+
+  const calculateTotalAmount = () => {
+    if (!startDate || !startTime || !endDate || !endTime) return;
+  
+    // Combine date and time into a valid ISO format
+    const start = new Date(`${startDate}T${startTime}:00`);
+    const end = new Date(`${endDate}T${endTime}:00`);
+  
+    // Validate that end time is after start time
+    if (start >= end) {
+      alert('La date de fin doit être après la date de début.');
+      setTotalAmount(0);
+      return;
+    }
+  
+    // Calculer la différence en heures
+    const diffInMs = end.getTime() - start.getTime();
+    const diffInHours = diffInMs / (1000 * 3600);
+  
+    // Calculer le montant total
+    const amount = diffInHours * tarifHoraire;
+    setTotalAmount(Number(amount.toFixed(2)));
+  };
+
+  useEffect(() => {
+    if (startDate && startTime && endDate && endTime) {
+      calculateTotalAmount();
+    }
+  }, [startDate, startTime, endDate, endTime]);
+
+
+  const handleSubmit = async () => {
+    try {
+      if (vehiculeId && vehiculeDetails) {
+        const reservationData = {
+          totalMontant: totalAmount,
+          dateDebut: startDate,
+          heureDebut: startTime,
+          dateFin: endDate,
+          heureFin: endTime
+        };
+        const result = await createReservation(vehiculeId, reservationData);
+        setToastMessage(result);
+        setToastType('success');
+        setToastVisible(true);
+        setTimeout(() => {
+          router.push("/(Driver)/suceessDemande");
+        }, 3000);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la création de la réservation :', error);
+      setToastMessage('Impossible de créer la réservation.');
+      setToastType('error');
+      setToastVisible(true);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -32,8 +157,9 @@ const DemandeVoiture = () => {
             placeholder="JJ/MM/AAAA"
             value={startDate}
             onChangeText={setStartDate}
+            editable={false}
           />
-          <TouchableOpacity onPress={() => console.log('Ouvrir le calendrier')}>
+          <TouchableOpacity onPress={() => { setCurrentPicker('startDate'); setDatePickerVisibility(true); }}>
             <Ionicons name="calendar" size={24} color="#E0DBD5" />
           </TouchableOpacity>
         </View> 
@@ -46,8 +172,9 @@ const DemandeVoiture = () => {
             placeholder="HH/MM"
             value={startTime}
             onChangeText={setStartTime}
+            editable={false}
           />
-          <TouchableOpacity onPress={() => console.log('Ouvrir l\'horloge')}>
+          <TouchableOpacity onPress={() => { setCurrentPicker('startTime'); setTimePickerVisibility(true); }}>
             <Ionicons name="time" size={24} color="#E0DBD5" />
           </TouchableOpacity>
         </View>
@@ -60,8 +187,9 @@ const DemandeVoiture = () => {
             placeholder="JJ/MM/AAAA"
             value={endDate}
             onChangeText={setEndDate}
+            editable={false}
           />
-          <TouchableOpacity onPress={() => console.log('Ouvrir le calendrier')}>
+          <TouchableOpacity onPress={() => { setCurrentPicker('endDate'); setDatePickerVisibility(true); }}>
             <Ionicons name="calendar" size={24} color="#E0DBD5" />
           </TouchableOpacity>
         </View>
@@ -74,16 +202,32 @@ const DemandeVoiture = () => {
             placeholder="HH/MM"
             value={endTime}
             onChangeText={setEndTime}
+            editable={false}
           />
-          <TouchableOpacity onPress={() => console.log('Ouvrir l\'horloge')}>
+          <TouchableOpacity onPress={() => { setCurrentPicker('endTime'); setTimePickerVisibility(true); }}>
             <Ionicons name="time" size={24} color="#E0DBD5" />
           </TouchableOpacity>
         </View>
 
+              {/* Picker Modals */}
+      <DateTimePickerModal
+        isVisible={isDatePickerVisible}
+        mode="date"
+        onConfirm={handleConfirmDate}
+        onCancel={() => setDatePickerVisibility(false)}
+        minimumDate={new Date()}
+      />
+      <DateTimePickerModal
+        isVisible={isTimePickerVisible}
+        mode="time"
+        onConfirm={handleConfirmTime}
+        onCancel={() => setTimePickerVisibility(false)}
+      />
+
         {/* Montant à payer */}
         <View style={styles.hr} />
         <View style={styles.paymentSection}>
-          <Text style={styles.paymentText}>Montant à payer : <Text style={styles.amount}>5 000 CFA</Text></Text>
+          <Text style={styles.paymentText}>Montant à payer : <Text style={styles.amount}>{totalAmount} CFA</Text></Text>
         </View>
         <View style={styles.hr} />
 
@@ -112,12 +256,16 @@ const DemandeVoiture = () => {
       </View>
 
       {/* Submit Button */}
-      <TouchableOpacity style={styles.button} onPress={() => router.push("/(Driver)/suceessDemande")}>
-        <Text style={styles.buttonText}>Valider</Text>
+      <TouchableOpacity style={styles.button} onPress={handleSubmit}>
+        <Text style={styles.buttonText}>Créer la réservation</Text>
       </TouchableOpacity>
+
+      {/* Toast Message */}
+      <ToastMessage message={toastMessage} type={toastType} visible={toastVisible} onHide={() => setToastVisible(false)} />
     </View>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {
@@ -133,11 +281,14 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: "bold",
-    // marginLeft: 10,
+    fontWeight: "bold", 
     width: "100%",
     color: "#000",
     textAlign: "center", 
+  },
+  infoText: {
+    fontSize: 18,
+    marginBottom: 8,padding: 12
   },
   label: {
     fontSize: 16,
@@ -220,5 +371,5 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.bold,
   }
 });
-
 export default DemandeVoiture;
+

@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Login } from "@/services/authService";
+import { Login } from "@/services/authService"; 
+import { useDispatch } from "react-redux";
+import { setUser } from "@/redux/slices/userSlice";
 import ToastMessage from "@/components/ToastMessage";
 
 const Connexion = () => {
   const router = useRouter();
+  const dispatch = useDispatch();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -34,13 +37,32 @@ const Connexion = () => {
 
   const handleLogin = async () => {
     if (!validateFields()) return;
-
+ 
     try {
-      const { user, token } = await Login(email, password);
+      const { user, token, role } = await Login(email, password, dispatch);
+
+      // Mettre à jour l'état global Redux
+      dispatch(
+        setUser({
+          uid: user.uid,
+          email: user.email,
+          role: role,
+          token: token,
+        })
+      );
       Alert.alert("Connexion réussie", `Bienvenue ${user.email}`);
       showToast(`Bienvenue ${user.email}`, "success");
       console.log("Token JWT :", token);
-      router.push("/(Driver)/trajet");
+      // Redirection en fonction du rôle
+      if (role === "Utilisateur") {
+        router.push("/(Utilisateurs)/(tabs)/home");
+      } else if (role === "Chauffeur Personnel") {
+        router.push("/(Driver)/trajet");
+      } else if (role === "Chauffeur IBI") {
+        router.push("/(Driver)/location");
+      } else {
+        showToast("Rôle utilisateur inconnu. Veuillez contacter l'administrateur.", "error");
+      }
     } catch (error) { 
         showToast("Login ou mot de passe invalid", "error");
     }
