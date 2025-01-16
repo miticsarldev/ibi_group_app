@@ -5,9 +5,14 @@ import { DrawerContentScrollView, DrawerItem } from "@react-navigation/drawer";
 import { router, usePathname } from "expo-router";
 import Drawer from "expo-router/drawer";
 import { COLORS } from '@/constants/styles'; 
-import { Deconnexion } from '@/services/authService';
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "@/redux/store"; 
+import { Deconnexion, getUserInfo } from '@/services/authService';
 
 const CustomDrawerContent = (props:any) => {
+  const dispatch = useDispatch();
+  const user = useSelector((state: RootState) => state.user);
+  const [personne, setUser] = useState<any>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error'; visible: boolean }>({
     message: '',
     type: 'success',
@@ -32,7 +37,7 @@ const CustomDrawerContent = (props:any) => {
             text: 'Oui',
             onPress: async () => {
               try {
-                await Deconnexion();
+                await Deconnexion(dispatch);
                 showToast('Déconnexion réussie.', 'success');
                 router.replace('/(UserLogin)/Connexion');
               } catch (error) {
@@ -56,31 +61,53 @@ const CustomDrawerContent = (props:any) => {
     console.log(pathname);
   }, [pathname]);
 
+    // Récupérer les informations de l'utilisateur
+    useEffect(() => {
+      const fetchUserInfo = async () => {
+        try {
+          const userInfo = await getUserInfo(); // Appeler le service pour récupérer les données.
+          setUser(userInfo);
+        } catch (error) {
+          console.error("Erreur lors de la récupération des informations de l'utilisateur:", error);
+        }
+      };
+      fetchUserInfo();
+    }, []); 
+
   type IoniconName = "car-sport" | "document-text" | "flash" | "location-outline" | "warning" | "settings";
 
   type RoutePath = "/trajet" | "/historique" | "/station" | "/location" | "/signaler" | "/parametre";
 
-const items: { name: string; route: RoutePath; icon: IoniconName }[] = [
-  { name: "Trajet Disponible", route: "/trajet", icon: "car-sport" },
-  { name: "Historique", route: "/historique", icon: "document-text" },
-  { name: "Station", route: "/station", icon: "flash" },
-  { name: "Location", route: "/location", icon: "location-outline" },
-  { name: "Signaler", route: "/signaler", icon: "warning" },
-  { name: "Parametre", route: "/parametre", icon: "settings" },
+const allItems: { name: string; route: RoutePath; icon: IoniconName; roles: string[] }[] = [
+  { name: "Trajet Disponible", route: "/trajet", icon: "car-sport", roles: ["Chauffeur Personnel"]  },
+  { name: "Location", route: "/location", icon: "location-outline", roles: ["Chauffeur IBI"] },
+  { name: "Station", route: "/station", icon: "flash", roles: ["Chauffeur IBI"] },
+  { name: "Signaler", route: "/signaler", icon: "warning", roles: ["Chauffeur IBI"] },
+  { name: "Historique", route: "/historique", icon: "document-text", roles: ["Chauffeur Personnel", "Chauffeur IBI"] },
+  { name: "Parametre", route: "/parametre", icon: "settings", roles: ["Chauffeur Personnel", "Chauffeur IBI"] },
 ];
+
+const items = allItems.filter((item) => user.role && item.roles.includes(user.role));
+
 
   return (
     <DrawerContentScrollView {...props}>
       <View style={styles.userInfoWrapper}>
+      {personne ? (
+        <>
         <Image
           source={require("../../assets/image/persn.webp")}
           resizeMode='contain'
           style={styles.userImg}
         />
         <View style={styles.userDetailsWrapper}>
-          <Text style={styles.userName}>Admin Admin</Text>
-          <Text style={styles.userEmail}>admin@gmail.com</Text>
+          <Text style={styles.userName}>{personne.fullName || "Utilisateur"}</Text>
+          <Text style={styles.userEmail}>{personne.email}</Text>
         </View>
+        </>
+      ) : (
+        <Text style={styles.userName}>Chargement...</Text>
+      )}
       </View>
 
       {items.map((item) => (
