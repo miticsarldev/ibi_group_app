@@ -5,6 +5,8 @@ export default function DetailsLayout() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="DetPage"/>
       <Stack.Screen name="Destination"/>
+      <Stack.Screen name="SetPassword"/>
+      <Stack.Screen name="DeletAccount"/>
     </Stack>
   );
 }

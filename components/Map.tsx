@@ -7,7 +7,7 @@ import MapView, {
 } from "react-native-maps";
 import MapViewDirections from "react-native-maps-directions";
 
-import { useDriverStore, useLocationStore } from "@/store/useStore";
+import { useDriverStore, useLocationStore } from "@/Redux/store/useStore";
 import { Driver, MarkerData } from "@/types";
 import {
   calculateDriverTimes,
@@ -82,7 +82,7 @@ const drivers: Driver[] = [
   },
 ];
 
-const Map = () => {
+const Map = ({ updateRouteInfo }) => { 
   const {
     userLongitude,
     userLatitude,
@@ -90,8 +90,6 @@ const Map = () => {
     destinationLongitude,
   } = useLocationStore();
   const { selectedDriver, setDrivers } = useDriverStore();
-
-  //   const { data: drivers, loading, error } = useFetch<Driver[]>("/(api)/driver");
   const [markers, setMarkers] = useState<MarkerData[]>([]);
 
   const defaultRegion = {
@@ -141,46 +139,12 @@ const Map = () => {
       destinationLongitude,
     }) || defaultRegion;
 
-  useEffect(() => {
-    if (Array.isArray(drivers)) {
-      if (!userLatitude || !userLongitude) return;
-
-      const newMarkers = generateMarkersFromData({
-        data: drivers,
-        userLatitude,
-        userLongitude,
-      });
-
-      setMarkers(newMarkers);
-    }
-  }, [drivers]);
-
   if (!userLatitude && !userLongitude)
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
         <ActivityIndicator size="small" color="#000" />
       </View>
     );
-
-  //   if (error)
-  //     return (
-  //       <View
-  //         style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-  //         // className="flex justify-between items-center w-full"
-  //       >
-  //         <Text>Error: {error}</Text>
-  //       </View>
-  //     );
-
-  //   console.log("region", region);
-  //   console.log("markers", markers);
-  //   console.log("API", directionsAPI);
-
-  //   return (
-  //     <View>
-  //       <Text>Map</Text>
-  //     </View>
-  //   );
 
   return (
     <MapView
@@ -238,6 +202,12 @@ const Map = () => {
             apikey={directionsAPI!}
             strokeColor="#0286FF"
             strokeWidth={2}
+            onReady={(result) => {
+              console.log("Distance du trajet:", result.distance.toFixed(2), "km");
+              console.log("Durée du trajet:", result.duration.toFixed(2), "minutes");
+              // Mettre à jour la distance et la durée dans le composant Home
+              updateRouteInfo(result.distance, result.duration);
+            }}
           />
         </>
       )}

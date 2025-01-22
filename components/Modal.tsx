@@ -20,6 +20,8 @@ type CustomModalProps = {
     longitude: number;
     address: string;
   }) => void;
+  distance: number | null; 
+  duration: number | null;
 };
 
 const CustomModal: React.FC<CustomModalProps> = ({
@@ -27,14 +29,16 @@ const CustomModal: React.FC<CustomModalProps> = ({
   onClose,
   onDestinationSelect,
   userLocation,
+  distance,
+  duration,
 }) => {
   const [priceModalVisible, setPriceModalVisible] = useState(false);
 
   const openPriceModal = () => {
-    onClose(); // Ferme le CustomModal
+    onClose(); 
     setTimeout(() => {
-      setPriceModalVisible(true); // Ouvre le PriceModal
-    }, 300); // Délai pour éviter les conflits visuels
+      setPriceModalVisible(true); 
+    }, 300); 
   };
 
   const closePriceModal = () => {
@@ -71,8 +75,8 @@ const CustomModal: React.FC<CustomModalProps> = ({
             <GoogleTextInput
               icon={icons.search}
               handlePress={(location) => {
-                setSelectedDestination(location.address); // Stocke l'adresse sélectionnée
-                onDestinationSelect(location); // Passe les données au parent si nécessaire
+                setSelectedDestination(location.address); 
+                onDestinationSelect(location); 
               }}
               containerStyle={styles.destinationInput}
               textInputBackgroundColor="#f5f5f5"
@@ -98,6 +102,8 @@ const CustomModal: React.FC<CustomModalProps> = ({
         onClose={closePriceModal}
         destination={selectedDestination || ""} 
         userLocation={userLocation}
+        distance={distance}
+        duration={duration}
       />
     </>
   );

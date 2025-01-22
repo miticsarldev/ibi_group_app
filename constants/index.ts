@@ -23,6 +23,8 @@ import selectedMarker from "@/assets/icons/selected-marker.png";
 import star from "@/assets/icons/star.png";
 import target from "@/assets/icons/target.png";
 import to from "@/assets/icons/to.png";
+import prix from "@/assets/icons/prix.png"
+import des from "@/assets/icons/des.png"
 import check from "@/assets/images/check.png";
 import getStarted from "@/assets/images/get-started.png";
 import message from "@/assets/images/message.png";
@@ -33,6 +35,7 @@ import onboarding3 from "@/assets/images/onboarding3.png";
 import signUpCar from "@/assets/images/signup-car.png";
 import moto from '@/assets/image/moto.png';
 import mobil from '@/assets/image/mobil.png';
+import passe from '@/assets/image/passe.png'
 export const images = {
   onboarding1,
   onboarding2,
@@ -44,6 +47,7 @@ export const images = {
   message,
   moto,
   mobil,
+  passe,
 };
 
 export const icons = {
@@ -72,4 +76,6 @@ export const icons = {
   star,
   target,
   to,
+  prix,
+  des,
 };

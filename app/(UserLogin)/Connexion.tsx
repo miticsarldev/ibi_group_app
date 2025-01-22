@@ -1,29 +1,63 @@
-// pages/UserLogin/Connexion.js
-
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Login } from "@/services/authService";
+import ToastMessage from "@/components/ToastMessage";
 
 const Connexion = () => {
   const router = useRouter();
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error'; visible: boolean }>({
+    message: "",
+    type: "success",
+    visible: false,
+  });
 
-  const handleLogin = () => {
-    // if (!email || !password) {
-    //   Alert.alert('Erreur', 'Veuillez remplir tous les champs.');
-    //   return;
-    // }
-    router.replace('/(Utilisateurs)/(tabs)/home');
+  const showToast = (message: string, type: 'success' | 'error') => {
+    setToast({ message, type, visible: true });
+  };
+
+  const validateFields = () => {
+    if (!email || !password) {
+      showToast("Veuillez remplir tous les champs.", "error");
+      return false;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      showToast("Adresse email invalide.", "error");
+      return false;
+    }
+    return true;
+  };
+
+  const handleLogin = async () => {
+    if (!validateFields()) return;
+
+    try {
+      const { user, token } = await Login(email, password);
+      Alert.alert("Connexion réussie", `Bienvenue ${user.email}`);
+      showToast(`Bienvenue ${user.email}`, "success");
+      console.log("Token JWT :", token);
+      router.push("/(Utilisateurs)/(tabs)/home");
+    } catch (error) { 
+        showToast("Login ou mot de passe invalid", "error");
+    }
   };
 
   return (
     <View style={styles.container}>
+      <ToastMessage
+        message={toast.message}
+        type={toast.type}
+        visible={toast.visible}
+        onHide={() => setToast({ ...toast, visible: true })}
+      />
       {/* Bouton retour */}
-      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+      {/* <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
         <Text style={styles.backText}>← Retour</Text>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
 
       {/* Titre */}
       <Text style={styles.title}>Connexion</Text>
@@ -53,8 +87,6 @@ const Connexion = () => {
       <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
         <Text style={styles.loginButtonText}>Se connecter</Text>
       </TouchableOpacity>
-
-      
 
       {/* Lien vers inscription */}
       <View style={styles.signupContainer}>
