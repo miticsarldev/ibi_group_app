@@ -33,7 +33,7 @@ const Itineraire = () => {
   const [destination, setDestination] = useState<LocationType | null>(null); 
   const translateY = useSharedValue(0);
   const [isCollapsed, setIsCollapsed] = useState(false); 
-  const trajetId = infoParams.get("trajetId");
+  const trajetId = infoParams.get("trajetId"); 
 
     // Récupération des données du trajet depuis Firestore
     useEffect(() => {

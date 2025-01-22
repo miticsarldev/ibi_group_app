@@ -70,7 +70,7 @@ const TrajetDisponible: React.FC<{ chauffeurLat: number; chauffeurLon: number }>
     initializeAndLoadData();
   }, []);
 
-  const handleAccept = async (trajetId: string,  clientLat: number, clientLon: number, destinationLat: number, destinationLon: number) => {
+  const handleAccept = async (trajet: trajet) => {
       const auth = getAuth();
       const user = auth.currentUser;
       
@@ -78,36 +78,42 @@ const TrajetDisponible: React.FC<{ chauffeurLat: number; chauffeurLon: number }>
         throw new Error('Utilisateur non connecté.');
       }
     try {
-      await updateTrajetStatus(trajetId, "accepter");
+      await updateTrajetStatus(trajet.id, "accepter");
       setToast({ message: "Trajet accepté", type: "success", visible: true });
       
       // Récupérer la position actuelle du chauffeur
       const location = await Location.getCurrentPositionAsync({});
-      const chauffeurLat = location.coords.latitude;
-      const chauffeurLon = location.coords.longitude;
+      const geocodedAddresses = await Location.reverseGeocodeAsync({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      });
+      
+      // Vérifie s'il y a au moins une adresse trouvée
+      const depart = geocodedAddresses.length > 0
+      ? (geocodedAddresses[0].street ?? geocodedAddresses[0].subregion ?? geocodedAddresses[0].city ?? "Adresse inconnue")
+      : "Adresse inconnue";
+
+
       // Construire l'objet HistoriqueTrajet
       const historique: historiqueTrajet = {
-        trajetId,
+        trajetId: trajet.id,
         chauffeurId: user.uid,
         statut: "Encours",
-        chauffeurLat,
-        chauffeurLon,
-        clientLat,
-        clientLon,
-        destinationLat,
-        destinationLon,
+        depart, 
+        destination: trajet.destination,
         createdAt: new Date().toISOString(),
+        montant: trajet.prix,
       };
       // Appeler le service pour enregistrer l'historique
       await createHistoriqueTrajet(historique);
       
       // Supprimer le trajet accepté de la liste locale
-      setTrajets((prev) => prev.filter((t) => t.id !== trajetId));
+      setTrajets((prev) => prev.filter((t) => t.id !== trajet.id));
 
       // Rediriger vers l'itinéraire
       router.push({
         pathname: "/(Driver)/itineraire",
-        params: { trajetId, clientLat, clientLon, chauffeurLat, chauffeurLon, destinationLat, destinationLon },
+        params: { trajetId : trajet.id},
       });
     } catch {
       setToast({ message: "Erreur lors de l'acceptation", type: "error", visible: true });
@@ -173,7 +179,7 @@ const TrajetDisponible: React.FC<{ chauffeurLat: number; chauffeurLon: number }>
         <TouchableOpacity style={styles.refuserButton} onPress={() => handleReject(item.id)}>
           <Text style={styles.buttonText}>Refuser</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.accepterButton} onPress={() => handleAccept(item.id, item.clientLat, item.clientLon, item.destinationLat, item.destinationLat)}>
+        <TouchableOpacity style={styles.accepterButton} onPress={() => handleAccept(item)}>
           <Text style={styles.buttonText}>Accepter</Text>
         </TouchableOpacity>
       </View>
