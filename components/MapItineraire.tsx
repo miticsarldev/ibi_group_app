@@ -59,10 +59,10 @@ const Map2: React.FC<Map2Props> = ({ userLocation, destination }) => {
   ];
 
   const defaultRegion = {
-    latitude: 12.5781975,
-    longitude: -8.0036832,
+    latitude: 12.6392,  
+    longitude: -8.0029,
     latitudeDelta: 0.01,
-    longitudeDelta: 0.01,
+    longitudeDelta: 0.01, 
   };
 
   const region = userLocation
@@ -89,9 +89,8 @@ const Map2: React.FC<Map2Props> = ({ userLocation, destination }) => {
             latitude: marker.latitude,
             longitude: marker.longitude,
           }}
-          // title={marker.name} 
-          title="Point de départ"
-          // image={icons.car}
+          title={marker.name}
+          image={icons.car}
         />
       ))}
 

@@ -1,45 +1,82 @@
-import React from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity, FlatList } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, Text, StyleSheet, Image, FlatList, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons"; 
-import { router } from "expo-router";
+import { useRouter } from "expo-router";
+import { station } from "@/interface/station";
+import { getStations, initialiserStation } from "@/services/stationService";
 
 const StationsScreen = () => {
-  const handleNext = () => {
-    router.navigate('/(Driver)/stationItineraire'); 
-  }
-  const stations = [
-    { name: "Kati Sanafa", time: "10mns" },
-    { name: "Hamdallaye", time: "13mns" },
-    { name: "Banco", time: "30mns" },
-    { name: "Yirimadjo", time: "20mns" },
-  ];
+  const [stations, setStations] = useState<station[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const router = useRouter(); 
 
-  const renderStation = ({ item }: { item: { name: string; time: string } }) => (
+  useEffect(() => {
+    const fetchStations = async () => {
+      try {
+        await initialiserStation();
+        const stationsData = await getStations();
+        setStations(stationsData);
+      } catch (error) {
+        console.error("Erreur lors du chargement des stations :", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStations();
+  }, []);
+
+  const handleNext = async (stationId: string) => {
+    try {
+      // Trouver la station avec l'ID correspondant
+      const station = stations.find(station => station.id === stationId);
+  
+      if (!station) {
+        console.error("Station introuvable");
+        return;
+      }
+  
+      // Assurez-vous de récupérer les coordonnées et d'effectuer une logique supplémentaire si nécessaire
+      const stationCoordinates = {
+        latitude: station.latitude,
+        longitude: station.longitude,
+      };
+  
+      // Maintenant, vous pouvez naviguer vers la page d'itinéraire
+      router.push(`/(Driver)/stationItineraire?stationId=${stationId}&latitude=${stationCoordinates.latitude}&longitude=${stationCoordinates.longitude}`);
+    } catch (error) {
+      console.error("Erreur lors du traitement de la station :", error);
+    }
+  };
+  
+
+  const renderStation =  ({ item }: { item: station })  => (
     <View style={styles.stationCard}>
       <View style={styles.stationInfo}>
         <View style={styles.imageContain} >
           <Image source={require("../../assets/image/flash.png")} style={styles.stationIcon} />
         </View>
         <View> 
-          <Text style={styles.stationName}>{item.name}</Text>
-          <Text style={styles.stationTime}> à {item.time}</Text>
+          <Text style={styles.stationName}>{item.adresse}</Text>
+          <Text style={styles.stationTime}> à 800m</Text>
         </View>
       </View>
-      <Ionicons name="location" size={24} color="#10B981" onPress={handleNext} />
+      <Ionicons name="location" size={24} color="#10B981" onPress={() => handleNext(item.id)} />
     </View>
   );
 
   return (
     <View style={styles.container} >
-       
-
-      {/* Station List */}
-      <FlatList
-        data={stations}
-        keyExtractor={(item, index) => index.toString()}
-        renderItem={renderStation}
-        contentContainerStyle={styles.listContainer} 
-      />
+      {loading ? (
+        <ActivityIndicator size="large" color="#10B981" />
+      ) : ( 
+        <FlatList
+          data={stations}
+          keyExtractor={(item, index) => index.toString()}
+          renderItem={renderStation}
+          contentContainerStyle={styles.listContainer} 
+        />
+      )}
     </View>
   );
 };

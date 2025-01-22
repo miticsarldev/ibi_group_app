@@ -9,7 +9,7 @@ import { historiqueTrajet } from "@/interface/historiqueTrajet";
 import * as Location from "expo-location";
 import { useLocationStore } from "@/store/useStore"; 
 import { getAuth } from 'firebase/auth';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 
 interface Toast {
   message: string;
@@ -22,6 +22,7 @@ const TrajetDisponible: React.FC<{ chauffeurLat: number; chauffeurLon: number }>
   const { setUserLocation } = useLocationStore(); 
   const [toast, setToast] = useState<Toast>({ message: "", type: "success", visible: false });
   const [loading, setLoading] = useState(true);
+  const router = useRouter(); 
 
   const initializeAndLoadData = async () => {
     setLoading(true);
