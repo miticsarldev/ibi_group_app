@@ -1,25 +1,14 @@
 import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  SafeAreaView,
-  Image,
-  Dimensions,
-  KeyboardAvoidingView,
-  Platform,
-  TouchableWithoutFeedback,
-  Keyboard,
-  Alert,
-} from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Image, Dimensions, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard, Alert } from "react-native";
 import { DrawerActions } from "@react-navigation/native";
 import * as Location from "expo-location";
-import { useLocationStore } from "@/store/useStore";
+import { useLocationStore } from "@/Redux/store/useStore";
 import { icons } from "@/constants";
 import Map from "@/components/Map";
 import CustomModal from "@/components/Modal";
 import { useNavigation, useRouter } from "expo-router";
+import { auth, db } from "@/firebaseConfig";
+import { doc, getDoc } from 'firebase/firestore';
 
 const { height: screenHeight } = Dimensions.get("window");
 
@@ -29,8 +18,30 @@ const Home = () => {
   const router = useRouter();
   const [hasPermission, setHasPermission] = useState<boolean>(false);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
+  const [userLocation, setUserLocationState] = useState<{
+    latitude: number;
+    longitude: number;
+    address: string;
+  } | null>(null);
+  const [userName, setUserName] = useState<string>("");
+  const [distance, setDistance] = useState<number | null>(null); 
+  const [duration, setDuration] = useState<number | null>(null);
 
   useEffect(() => {
+    const fetchUserData = async () => {
+      const user = auth.currentUser;
+      if (user) {
+        const userRef = doc(db, 'personne', user.uid);
+        const userDoc = await getDoc(userRef);
+        if (userDoc.exists()) {
+          setUserName(userDoc.data().fullName);
+        }
+      }
+    };
+
+    fetchUserData();
+
+    // Récupérer la localisation de l'utilisateur
     (async () => {
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
@@ -44,11 +55,14 @@ const Home = () => {
         longitude: location.coords?.longitude!,
       });
 
-      setUserLocation({
+      const userLocationData = {
         latitude: location.coords?.latitude,
         longitude: location.coords?.longitude,
         address: `${address[0].name}, ${address[0].region}`,
-      });
+      };
+
+      setUserLocation(userLocationData); // Stockage global
+      setUserLocationState(userLocationData); // Stockage local pour passer à CustomModal
     })();
   }, []);
 
@@ -60,9 +74,17 @@ const Home = () => {
     setDestinationLocation(location);
     setModalVisible(false);
     setTimeout(() => {
-      router.replace("/(Utilisateurs)/Adresse");
+      ;
     }, 3000);
   };
+  // Fonction pour mettre à jour la distance et la durée
+  const updateRouteInfo = (distance: number, duration: number) => {
+    setDistance(distance);
+    setDuration(duration);
+    console.log("Distance du trajet:",distance );
+    console.log("Durée du trajet:",duration);
+  };
+
 
   return (
     <KeyboardAvoidingView
@@ -73,7 +95,7 @@ const Home = () => {
         <SafeAreaView
           style={[styles.container, { backgroundColor: "#f5f5f5" }]}
         >
-          {/* Header */}
+         
           <View style={styles.header}>
             <TouchableOpacity
               onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
@@ -83,7 +105,7 @@ const Home = () => {
                 style={styles.profileImage}
               />
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>Bienvenue Aly Sow👋</Text>
+            <Text style={styles.headerTitle}>Bienvenue {userName} 👋</Text>
             <TouchableOpacity
               onPress={() =>
                 Alert.alert("Déconnexion", "Voulez-vous vraiment vous déconnecter ?", [
@@ -97,12 +119,12 @@ const Home = () => {
             </TouchableOpacity>
           </View>
 
-          {/* Map */}
-          <View style={styles.mapContainer}>
-            <Map />
+         
+         <View style={styles.mapContainer}>
+            <Map updateRouteInfo={updateRouteInfo} />
           </View>
 
-          {/* Bouton pour choisir la destination */}
+          
           <View style={styles.buttonContainer}>
             <TouchableOpacity
               style={styles.chooseDestinationButton}
@@ -117,6 +139,9 @@ const Home = () => {
             visible={modalVisible}
             onClose={() => setModalVisible(false)}
             onDestinationSelect={handleDestinationPress}
+            userLocation={userLocation}
+            distance={distance}
+            duration={duration}
           />
         </SafeAreaView>
       </TouchableWithoutFeedback>
@@ -133,7 +158,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingTop: 50, // Ajuste l'espacement pour éviter le débordement
+    paddingTop: 50,
     paddingBottom: 10,
     backgroundColor: "#f5f5f5",
   },

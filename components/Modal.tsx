@@ -10,27 +10,32 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert,
 } from "react-native";
 import GoogleTextInput from "@/components/GoogleTextInput";
 import { icons } from "@/constants";
 import PriceModal from "./PriceModal";
-import { useLocationStore } from "@/store/useStore";
+import { useLocationStore } from "@/Redux/store/useStore";
 
 type CustomModalProps = {
   visible: boolean;
   onClose: () => void;
+  userLocation: { latitude: number; longitude: number; address: string } | null;
   onDestinationSelect: (location: {
     latitude: number;
     longitude: number;
     address: string;
   }) => void;
+  distance: number | null;
+  duration: number | null;
 };
 
 const CustomModal: React.FC<CustomModalProps> = ({
   visible,
   onClose,
   onDestinationSelect,
+  userLocation,
+  distance,
+  duration,
 }) => {
   const [priceModalVisible, setPriceModalVisible] = useState(false);
   const { userAddress, setUserLocation } = useLocationStore();
@@ -63,6 +68,10 @@ const CustomModal: React.FC<CustomModalProps> = ({
     setPriceModalVisible(false);
   };
 
+  const [selectedDestination, setSelectedDestination] = useState<string | null>(
+    null
+  );
+
   return (
     <>
       <Modal
@@ -91,14 +100,21 @@ const CustomModal: React.FC<CustomModalProps> = ({
                   </Text>
                 </View>
 
+                {/* Destination Input */}
                 <GoogleTextInput
                   icon={icons.search}
-                  handlePress={onDestinationSelect}
+                  handlePress={(location) => {
+                    setSelectedDestination(location.address);
+                    onDestinationSelect(location);
+                  }}
                   containerStyle="width: 100%;"
                   textInputBackgroundColor="#f5f5f5"
                 />
-
-                <Text style={styles.noAddressText}>Aucune adresse choisie</Text>
+                <Text style={styles.noAddressText}>
+                  {selectedDestination
+                    ? selectedDestination
+                    : "Aucune adresse choisie"}
+                </Text>
 
                 <TouchableOpacity
                   style={styles.confirmButton}
@@ -112,7 +128,15 @@ const CustomModal: React.FC<CustomModalProps> = ({
         </KeyboardAvoidingView>
       </Modal>
 
-      <PriceModal visible={priceModalVisible} onClose={closePriceModal} />
+      {/* Price Modal */}
+      <PriceModal
+        visible={priceModalVisible}
+        onClose={closePriceModal}
+        destination={selectedDestination || ""}
+        userLocation={userLocation}
+        distance={distance}
+        duration={duration}
+      />
     </>
   );
 };

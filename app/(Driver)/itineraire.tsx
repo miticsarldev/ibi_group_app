@@ -6,7 +6,7 @@ import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-na
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { COLORS } from "../../constants/styles";
-import { useLocationStore } from "@/store/useStore";
+import { useLocationStore } from "@/Redux/store/useStore";
 import Map2 from "@/components/MapItineraire";  
 import { useSearchParams } from "expo-router/build/hooks";
 
