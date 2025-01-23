@@ -4,6 +4,8 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { setUser, clearUser } from "@/redux/slices/userSlice";
 import { Dispatch } from "@reduxjs/toolkit"; 
 import { personne } from "@/interface/personne";
+import { router } from "expo-router";
+import { Alert } from "react-native";
 
 // Inscription d'un nouvel utilisateur
 export const Create = async (personne: personne, dispatch: Dispatch) => {
@@ -35,7 +37,8 @@ export const Create = async (personne: personne, dispatch: Dispatch) => {
       })
     );
     console.log("Inscription réussie pour :", user.email);
-    return user;
+    // Connexion automatique après l'inscription
+    return await Login(personne.email, personne.password, dispatch);
   } catch (error) {
     if (error instanceof Error) {
       console.error("Erreur lors de l'inscription :", error.message);
@@ -69,7 +72,20 @@ export const Login = async (email: string, password: string, dispatch: Dispatch)
         })
       );
 
-      console.log("Connexion réussie :", user.email);
+      // Redirection basée sur le rôle utilisateur
+      switch (userData.role) {
+        case "Utilisateur":
+          router.push("/(Utilisateurs)/(tabs)/home");
+          break;
+        case "Chauffeur Personnel":
+          router.push("/(Driver)/trajet");
+          break;
+        case "Chauffeur IBI":
+          router.push("/(Driver)/location");
+          break;
+        default:
+          Alert.alert("Rôle utilisateur inconnu. Veuillez contacter l'administrateur.", "error");
+      }
       return { user, token, role: userData.role };
     } else {
       throw new Error("Utilisateur non trouvé dans Firestore.");

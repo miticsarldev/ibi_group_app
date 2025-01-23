@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Login } from "@/services/authService"; 
 import { useDispatch } from "react-redux";
@@ -52,16 +52,6 @@ const Connexion = () => {
       Alert.alert("Connexion réussie", `Bienvenue ${user.email}`);
       showToast(`Bienvenue ${user.email}`, "success");
       console.log("Token JWT :", token);
-      // Redirection en fonction du rôle
-      if (role === "Utilisateur") {
-        router.push("/(Utilisateurs)/(tabs)/home");
-      } else if (role === "Chauffeur Personnel") {
-        router.push("/(Driver)/trajet");
-      } else if (role === "Chauffeur IBI") {
-        router.push("/(Driver)/location");
-      } else {
-        showToast("Rôle utilisateur inconnu. Veuillez contacter l'administrateur.", "error");
-      }
     } catch (error) { 
         showToast("Login ou mot de passe invalid", "error");
     }
@@ -74,11 +64,7 @@ const Connexion = () => {
         type={toast.type}
         visible={toast.visible}
         onHide={() => setToast({ ...toast, visible: true })}
-      />
-      {/* Bouton retour */}
-      {/* <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-        <Text style={styles.backText}>← Retour</Text>
-      </TouchableOpacity> */}
+      /> 
 
       {/* Titre */}
       <Text style={styles.title}>Connexion</Text>

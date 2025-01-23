@@ -10,6 +10,6 @@ export interface trajet {
     nmbrePers: number,
     prix: number,
     otpCode: string;
-    statut: "diponible" | "accepter" | "refuser";
+    statut: "Encours"  | "diponible" | "accepter" | "refuser";
     [key: string]: any;
   }

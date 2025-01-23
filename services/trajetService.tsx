@@ -149,8 +149,8 @@ export const fetchTrajetsInRadius = async (
       console.log("Trajets disponibles avant filtrage :", trajets);
 
     // Filtrer uniquement les trajets avec un statut "disponible"
-    const trajetsDisponibles = trajets.filter((doc) => doc.statut === "diponible");
-    console.log("Trajets avec statut 'disponible' :", trajetsDisponibles);
+    const trajetsDisponibles = trajets.filter((doc) => doc.statut === "Encours");
+    console.log("Trajets avec statut 'Encours' :", trajetsDisponibles);
 
     // Filtrer les trajets dans un rayon de 3 km
     const trajetsInRadius = trajetsDisponibles.filter((trajet) => {
