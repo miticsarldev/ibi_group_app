@@ -4,7 +4,7 @@ import * as Location from "expo-location";
 import { GestureHandlerRootView, PanGestureHandler, PanGestureHandlerGestureEvent, State } from 'react-native-gesture-handler';
 import { COLORS } from "@/constants/styles"; 
 import { useRouter } from 'expo-router'; 
-import { useLocationStore } from '@/store/useStore';  
+import { useLocationStore } from '@/Redux/store/useStore';  
 import Map2 from '@/components/MapItineraire';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';

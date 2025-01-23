@@ -17,7 +17,7 @@ const Connexion = () => {
     type: "success",
     visible: false,
   });
-
+  
   const showToast = (message: string, type: 'success' | 'error') => {
     setToast({ message, type, visible: true });
   };
@@ -37,7 +37,6 @@ const Connexion = () => {
 
   const handleLogin = async () => {
     if (!validateFields()) return;
- 
     try {
       const { user, token, role } = await Login(email, password, dispatch);
 

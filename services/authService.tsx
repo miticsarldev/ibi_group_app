@@ -25,7 +25,7 @@ export const Create = async (personne: personne, dispatch: Dispatch) => {
       dateCreate: new Date().toISOString(),
       isActif: true,
     });
-
+    
     // Mettre à jour l'état global Redux
     dispatch(
       setUser({
@@ -34,7 +34,6 @@ export const Create = async (personne: personne, dispatch: Dispatch) => {
         role: personne.role,
       })
     );
-
     console.log("Inscription réussie pour :", user.email);
     return user;
   } catch (error) {
@@ -121,89 +120,3 @@ export const getUserInfo = async () => {
     throw new Error("Utilisateur non connecté");
   }
 };
-
-
-// Inscription d'un nouvel utilisateur avec email et mot de passe
-// export const Create = async (personne: personne) => {
-//   try {
-//     // Créer l'utilisateur avec Firebase Auth
-//     const userCredential = await createUserWithEmailAndPassword(auth, personne.email, personne.password);
-//     const user = userCredential.user;
-
-//     // Ajouter des informations supplémentaires dans Firestore
-//     const userRef = doc(db, 'personne', user.uid);
-//     await setDoc(userRef, {
-//       fullName: personne.fullName,
-//       email: user.email,
-//       contact: personne.contact,
-//       gender: personne.gender,
-//       referral: personne.referral ?? null,
-//       promoCode: personne.promoCode ?? null,
-//       permis: personne.permis ?? null,
-//       identiter: personne.identiter ?? null,
-//       role: personne.role,
-//       dateCreate: new Date().toISOString(),
-//       isActif: true,
-//     });
-
-//     console.log("Inscription réussie pour :", user.email);
-//     return user;
-//   } catch (error) {
-//     if (error instanceof Error) {
-//       console.error("Erreur lors de l'inscription :", error.message);
-//       throw new Error(error.message);
-//     } else {
-//       console.error("Erreur inconnue lors de l'inscription :", error);
-//       throw new Error("Une erreur inconnue est survenue.");
-//     }
-//   }
-// };
-
-// Connexion d'un utilisateur avec email et mot de passe
-
-// export const Login = async (email: string, password: string) => {
-//   try {
-//     const userCredential = await signInWithEmailAndPassword(auth, email, password);
-//     const user = userCredential.user;
-
-//     // Récupérer les informations supplémentaires depuis Firestore
-//     const userRef = doc(db, "personne", user.uid);
-//     const userDoc = await getDoc(userRef);
-
-//     if (userDoc.exists()) {
-//       const userData = userDoc.data();
-//       const token = await user.getIdToken();
-//       console.log("Connexion réussie :", user.email);
-//       return { user, token, role: userData.role };
-//     } else {
-//       throw new Error("Utilisateur non trouvé dans Firestore.");
-//     }
-
-//   } catch (error) {
-//     if (error instanceof Error) {
-//       console.error("Login ou mot de passe invalid");
-//       throw new Error(error.message);
-//     } else {
-//       console.error("Erreur inconnue lors de la connexion :", error);
-//       throw new Error("Une erreur inconnue est survenue.");
-//     }
-//   }
-// };
-
-
-// Déconnexion de l'utilisateur
-
-// export const Deconnexion = async () => {
-//   try {
-//     await signOut(auth);
-//     console.log("Déconnexion réussie");
-//   } catch (error) {
-//     if (error instanceof Error) {
-//       console.error("Erreur lors de la connexion :", error.message);
-//       throw new Error(error.message);
-//     } else {
-//       console.error("Erreur inconnue lors de la connexion :", error);
-//       throw new Error("Une erreur inconnue est survenue.");
-//     }
-//   }
-// };

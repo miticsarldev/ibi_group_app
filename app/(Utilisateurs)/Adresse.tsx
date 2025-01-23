@@ -80,7 +80,7 @@ import {
 } from "react-native";
 import React from "react";
 import { useRouter } from "expo-router";
-import { useLocationStore } from "@/store/useStore";
+import { useLocationStore } from "@/Redux/store/useStore";
 import RideLayout from "@/components/RideLayout";
 import GoogleTextInput from "@/components/GoogleTextInput";
 import { icons } from "@/constants";

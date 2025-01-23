@@ -11,7 +11,11 @@ import {
 const Parametre = () => {
   const handleOptionPress = (option: string) => {
     console.log(`Option sélectionnée : ${option}`);
-    router.push('/(Details)/SetPassword');
+    if (option === "ChangerMdp") {
+      router.push("/(Details)/SetPassword"); 
+    } else if (option === "SupprimerCompte") {
+      router.push("/(Details)/DeletAccount"); 
+    }
   };
 
   return (

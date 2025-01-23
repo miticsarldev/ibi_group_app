@@ -9,7 +9,6 @@ const googlePlacesApiKey = process.env.EXPO_PUBLIC_PLACES_API_KEY;
 const GoogleTextInput = ({
   icon,
   initialLocation,
-  containerStyle,
   textInputBackgroundColor,
   handlePress,
 }: GoogleInputProps) => {
@@ -31,7 +30,7 @@ const GoogleTextInput = ({
     >
       <GooglePlacesAutocomplete
         fetchDetails={true}
-        placeholder="Search"
+        placeholder="Rechercher"
         debounce={200}
         styles={{
           textInputContainer: {
