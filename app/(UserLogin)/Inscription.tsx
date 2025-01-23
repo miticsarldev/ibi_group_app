@@ -104,7 +104,7 @@ const Inscription = ({ navigation }: any) => {
       await Create(personne);
       Alert.alert("Succès", "Inscription réussie !");
       setTimeout(() => {
-        router.push("/(Utilisateurs)/(tabs)/home");
+        router.push("/(Driver)/trajet");
       }, 500);
     } catch (error:any) {
       Alert.alert("Erreur", "Une erreur est survenue lors de l'inscription.");

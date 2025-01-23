@@ -1,21 +1,56 @@
-import React, { useRef } from "react";
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, TextInputProps } from "react-native";
-import { useRouter } from "expo-router"; 
+import React, { useRef, useState } from "react";
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, TextInputProps, Alert } from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router"; 
 import { COLORS, FONTS } from "@/constants/styles";
+import { verifierOtpTrajet } from "@/services/trajetService";
 
 const OtpScreen: React.FC = () => {
-  const handleNext = () => {
-    router.replace("/(Driver)/itineraire?tripStage=dropoff");
-  };
-  
-  const router = useRouter();
+  const router = useRouter(); 
+  const { trajetId } = useLocalSearchParams<{ trajetId: string }>(); 
+  const [otp, setOtp] = useState<string[]>(Array(5).fill(""));
   const otpRefs = Array.from({ length: 5 }, () => useRef<TextInput>(null));
 
+  // const handleNext = () => {
+  //   router.replace("/(Driver)/itineraire?tripStage=dropoff");
+  // };
+  
   const handleInputChange = (text: string, index: number) => {
-    if (text.length === 1 && index < otpRefs.length - 1) {
-      otpRefs[index + 1].current?.focus();
+    if (/^\d?$/.test(text)) {
+      const newOtp = [...otp];
+      newOtp[index] = text;
+      setOtp(newOtp);
+
+      if (text.length === 1 && index < otpRefs.length - 1) {
+        otpRefs[index + 1].current?.focus();
+      }
     }
   };
+
+  const handleValidateOtp = async () => {
+    if (!trajetId) {
+      Alert.alert("Erreur", "Aucun trajet spécifié.");
+      return;
+    }
+
+    const otpSaisi = otp.join("");
+    if (otpSaisi.length < 5) {
+      Alert.alert("Erreur", "Veuillez entrer un OTP valide.");
+      return;
+    }
+
+    const result = await verifierOtpTrajet(trajetId, otpSaisi);
+    if (result.success) {
+      router.replace(`/(Driver)/itineraire?tripStage=dropoff`);
+    } else {
+      Alert.alert("Échec", result.message);
+    }
+  };
+
+  // const handleInputChange = (text: string, index: number) => {
+  //   if (text.length === 1 && index < otpRefs.length - 1) {
+  //     otpRefs[index + 1].current?.focus();
+  //   }
+  // };
 
   return (
     <View style={styles.container}>
@@ -41,7 +76,7 @@ const OtpScreen: React.FC = () => {
       {/* Button */}
       <TouchableOpacity
         style={styles.validateButton}
-        onPress={handleNext}
+        onPress={handleValidateOtp}
       >
         <Text style={styles.validateButtonText}>Valider</Text>
       </TouchableOpacity>

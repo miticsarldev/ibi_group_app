@@ -5,10 +5,12 @@ import { GestureHandlerRootView, PanGestureHandler, State, PanGestureHandlerGest
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { COLORS } from "../../constants/styles";
-import { useLocationStore } from "@/Redux/store/useStore";
+import { COLORS } from "@/constants/styles"; 
 import Map2 from "@/components/MapItineraire";  
 import { useSearchParams } from "expo-router/build/hooks";
+import { doc, getDoc, getFirestore } from "firebase/firestore";
+import { trajet } from "@/interface/trajet";
+import { personne } from "@/interface/personne";
 
 
 const { height } = Dimensions.get("window");
@@ -22,10 +24,53 @@ type LocationType = {
 };
 
 const Itineraire = () => {
-  const { setUserLocation, setDestinationLocation } = useLocationStore();
   const router = useRouter();
   const [userLocation, setUserLocationState] = useState<LocationType | null>(null);
+  const [tripStage, setTripStage] = useState<"pickup" | "dropoff">("pickup");
+  const [trajetData, setTrajetData] = useState<trajet | null>(null);
+  const [personneData, setPersonneData] = useState<personne | null>(null);
+  const infoParams = useSearchParams();
   const [destination, setDestination] = useState<LocationType | null>(null); 
+  const translateY = useSharedValue(0);
+  const [isCollapsed, setIsCollapsed] = useState(false); 
+  const trajetId = infoParams.get("trajetId"); 
+
+    // Récupération des données du trajet depuis Firestore
+    useEffect(() => {
+      const fetchTrajet = async () => {
+        if (!trajetId) return;
+  
+        try {
+          const db = getFirestore();
+          const trajetRef = doc(db, "trajet", trajetId);
+          const trajetSnap = await getDoc(trajetRef);
+  
+          if (trajetSnap.exists()) {
+            const data = trajetSnap.data() as trajet; // Cast des données en type Trajet
+            setTrajetData(data);
+          // Récupérer les informations de la personne
+          if (data.personneId) {
+            const personneRef = doc(db, "personne", data.personneId); // Nom de votre collection "personnes"
+            const personneSnap = await getDoc(personneRef);
+
+            if (personneSnap.exists()) {
+              setPersonneData(personneSnap.data() as personne);
+            }
+            } else {
+              console.error("Personne introuvable !");
+            }
+          } else {
+            console.error("Trajet introuvable !");
+          }
+        } catch (error) {
+          console.error("Erreur lors de la récupération du trajet :", error);
+        }
+      };
+  
+      fetchTrajet();
+    }, [trajetId]);
+
+  
   useEffect(() => {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -37,48 +82,46 @@ const Itineraire = () => {
         longitude: location.coords.longitude,
       });
 
-      const userLoc: LocationType = {
+      const currentLocation: LocationType = {
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
         address: `${address[0]?.name ?? ""}, ${address[0]?.region ?? ""}`,
       };
 
-      setUserLocation(userLoc);
-      setUserLocationState(userLoc);
+      setUserLocationState(currentLocation);
 
-      const defaultDestination: LocationType = {
-        latitude: 12.6392,
-        longitude: -8.0029,
-        address: "Destination Client",
-      };
-
-      setDestination(defaultDestination);
-      setDestinationLocation(defaultDestination);
+      if (tripStage === "pickup") {
+        setDestination({
+          latitude: trajetData?.destinationLat ?? currentLocation.latitude,
+          longitude: trajetData?.destinationLon ?? currentLocation.longitude,
+          address: trajetData?.destinationAddress ?? "Destination par défaut",
+        });
+      }
     })();
-  }, []);  
+  }, [trajetData, tripStage]); 
 
-  const searchParams = useSearchParams();
-  const [tripStage, setTripStage] = useState<"pickup" | "dropoff">("pickup");
-
-  useEffect(() => {
-    const stage = searchParams.get("tripStage") as "pickup" | "dropoff" | null;
-    if (stage === "pickup" || stage === "dropoff") {
-      setTripStage(stage); // Mise à jour de l'état
-    }
-  }, [searchParams]);
-  
   const handleNextStage = () => {
     if (tripStage === "pickup") {
-      router.push("/(Driver)/otp");
+      router.push({
+        pathname: "/(Driver)/otp",
+        params: { trajetId },
+      }); 
     } else if (tripStage === "dropoff") {
       alert("Trajet terminé !");
       router.push("/(Driver)/trajet");
     }
   };
 
-  const translateY = useSharedValue(0);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const searchParams = useSearchParams();
+ 
 
+  useEffect(() => {
+    const stage = searchParams.get("tripStage") as "pickup" | "dropoff" | null;
+    if (stage === "pickup" || stage === "dropoff") {
+      setTripStage(stage);
+    }
+  }, [searchParams]);
+  
   const gestureHandler = (event: PanGestureHandlerGestureEvent) => {
     const { translationY } = event.nativeEvent;
     translateY.value = Math.min(MIN_HEIGHT, Math.max(MAX_HEIGHT, translationY));
@@ -104,17 +147,6 @@ const Itineraire = () => {
     transform: [{ translateY: translateY.value }],
   }));
 
-    const trajet = {
-    id: 1,
-    type: "Passager",
-    localisation: "Sotuba à Yirimadio",
-    personnes: 1,
-    temps: "5 mins",
-    distance: "800m",
-    prix: "2000 CFA",
-    image: require("../../assets/image/person.jpg"),
-  };
-
   return (
     <GestureHandlerRootView style={styles.container}>
       {/* Carte avec Directions */}
@@ -139,26 +171,32 @@ const Itineraire = () => {
         }}
       >
         <Animated.View style={[styles.detailsContainer, animatedStyle]}>
-          <View style={styles.handleBar} />
-          <Text style={styles.arrivalTime}>Heure estimée : 15h35</Text>
-          <View style={styles.userInfo}>
-            <Image source={trajet.image} style={styles.userImage} />
-            <View>
-              <Text style={styles.userName}>Aly Touré</Text>
-              <Text style={styles.userDetails}>
-                {trajet.distance} ({trajet.temps}){"\n"}
-                {trajet.localisation}
-              </Text>
+        {trajetData && personneData ? (
+          <View>
+            <View style={styles.handleBar} />
+            <Text style={styles.arrivalTime}>Heure estimée : 15h35</Text>
+            <View style={styles.userInfo}>
+              <Image source={require("../../assets/image/person.jpg")} style={styles.userImage} />
+              <View>
+                <Text style={styles.userName}>{personneData.fullName}</Text>
+                <Text style={styles.userDetails}>
+                  800m (30mns){"\n"}
+                  {trajetData.destination}
+                </Text>
+              </View>
             </View>
-          </View>
-          <Text style={styles.price}>
-            {tripStage === "pickup" ? "À récupérer" : "À déposer"} : {trajet.prix}
-          </Text>
-          <TouchableOpacity style={styles.actionButton} onPress={handleNextStage}>
-            <Text style={styles.actionButtonText}>
-              {tripStage === "pickup" ? "Passager récupéré" : "Trajet terminé"}
+            <Text style={styles.price}>
+              Montant à payer : {trajetData.prix} XOF
             </Text>
-          </TouchableOpacity>
+            <TouchableOpacity style={styles.actionButton} onPress={handleNextStage}>
+              <Text style={styles.actionButtonText}>
+                {tripStage === "pickup" ? "Passager récupéré" : "Trajet terminé"}
+              </Text>
+            </TouchableOpacity>
+          </View>  
+        ) : (
+            <Text>Chargement des données...</Text>
+          )}
         </Animated.View>
       </PanGestureHandler>
     </GestureHandlerRootView>
@@ -168,7 +206,7 @@ const Itineraire = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
+  }, 
   mapContainer: {
     flex: 1,
   },
