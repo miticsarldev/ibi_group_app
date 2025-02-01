@@ -3,12 +3,14 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'reac
 import { useRouter } from 'expo-router';
 import { Login } from "@/services/authService"; 
 import { useDispatch } from "react-redux";
-import { setUser } from "@/redux/slices/userSlice";
+import Blur from '@/components/loader';
+import { setUser } from "@/reduxfordriver/slices/userSlice";
 import ToastMessage from "@/components/ToastMessage";
 
 const Connexion = () => {
   const router = useRouter();
   const dispatch = useDispatch();
+  const [loading, setLoading] = useState(false);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -37,6 +39,7 @@ const Connexion = () => {
 
   const handleLogin = async () => {
     if (!validateFields()) return;
+    setLoading(true)
     try {
       const { user, token, role } = await Login(email, password, dispatch);
 
@@ -54,11 +57,14 @@ const Connexion = () => {
       console.log("Token JWT :", token);
     } catch (error) { 
         showToast("Login ou mot de passe invalid", "error");
+    } finally{
+      setLoading(false)
     }
   };
 
   return (
     <View style={styles.container}>
+      <Blur loading={loading} />
       <ToastMessage
         message={toast.message}
         type={toast.type}

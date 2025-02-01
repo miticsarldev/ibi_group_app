@@ -16,13 +16,7 @@ const Location = () => {
   const [selectedVehicule, setSelectedVehicule] = useState<vehicule | null>(null); 
   const [selectedType, setSelectedType] = useState<string | null>(null); 
 
-  // // Simulation de récupération de l'état de location de l'utilisateur connecté
-  // const fetchUserRentalStatus = async (): Promise<boolean> => {
-  //   // Remplacez cette partie par une requête à votre backend ou service
-  //   // Ex. : const response = await fetchRentalStatus(userId);
-  //   // Ici, on suppose qu'on vérifie simplement dans Firestore.
-  //   return false; // Retourne "true" si une location est active.
-  // };
+
 
   useEffect(() => {
     const loadVehiclesAndStatus = async () => {

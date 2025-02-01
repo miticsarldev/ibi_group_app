@@ -1,4 +1,4 @@
-import store from '@/redux/store';
+import store from '@/reduxfordriver/store';
 import { Provider } from 'react-redux'; 
 import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
 import { useFonts } from "expo-font";

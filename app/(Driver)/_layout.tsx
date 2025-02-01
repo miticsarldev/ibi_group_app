@@ -5,9 +5,9 @@ import { DrawerContentScrollView, DrawerItem } from "@react-navigation/drawer";
 import { router, usePathname } from "expo-router";
 import Drawer from "expo-router/drawer";
 import { COLORS } from '@/constants/styles'; 
-import { useDispatch, useSelector } from "react-redux";
-import { RootState } from "@/redux/store"; 
+import { useDispatch, useSelector } from "react-redux"; 
 import { Deconnexion, getUserInfo } from '@/services/authService';
+import { RootState } from '@/reduxfordriver/store';
 
 const CustomDrawerContent = (props:any) => {
   const dispatch = useDispatch();

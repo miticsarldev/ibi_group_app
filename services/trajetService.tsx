@@ -1,168 +1,102 @@
-import { collection, getDocs, doc, setDoc, updateDoc, getFirestore, getDoc } from "firebase/firestore";
+import { doc, updateDoc, getFirestore, getDoc, collection, getDocs, addDoc } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
 import { trajet } from "@/interface/trajet";
-import { getAuth } from 'firebase/auth';  
+import { personne } from "@/interface/personne";
+import { historiqueTrajet } from "@/interface/historiqueTrajet"; 
+import { get, getDatabase, ref } from "firebase/database";
+import { getAuth } from "firebase/auth";
 
-// Initialise la collection `trajet` avec des valeurs par défaut si elle est vide.
-export const initializeTrajets = async (): Promise<void> => {
-  const auth = getAuth();
-  const user = auth.currentUser;
-  
-  if (!user) {
-    throw new Error('Utilisateur non connecté.');
-  }
-  const trajets: trajet[] = [
-    {
-      id: "1",
-      personneId: user.uid,
-      clientLat: 12.0,
-      clientLon: -8.0,
-      destinationLat: 12.1,
-      destinationLon: -8.1,
-      destination: "kati",
-      type: "voiture",
-      nmbrePers: 3,
-      prix: 4000,
-      otpCode: "12345",
-      statut: "diponible",
-      dateCreate: new Date().toISOString()
-    },
-    {
-      id: "2",
-      personneId: user.uid,
-      clientLat: 12.05,
-      clientLon: -8.02,
-      destinationLat: 12.15,
-      destinationLon: -8.12,
-      destination: "kati",
-      type: "moto",
-      nmbrePers: 2,
-      prix: 500,
-      otpCode: "65432",
-      statut: "diponible",
-      dateCreate: new Date().toISOString()
-    },
-    {
-      id: "3",
-      personneId: user.uid, 
-      clientLat: 12.621,
-      clientLon: -8.035,
-      destinationLat: 12.622,
-      destinationLon: -8.034,
-      destination: "kati",
-      type: "voiture",
-      nmbrePers: 1,
-      prix: 5000,
-      otpCode: "98765",
-      statut: "diponible",
-      dateCreate: new Date().toISOString()
-    },
-    {
-      id: "4",
-      personneId: user.uid, 
-      clientLat: 12.621,
-      clientLon: -8.035,
-      destinationLat: 12.622,
-      destinationLon: -8.034,
-      destination: "katiyer",
-      type: "moto",
-      nmbrePers: 2,
-      prix: 5000,
-      otpCode: "98765",
-      statut: "diponible",
-      dateCreate: new Date().toISOString()
-    },
-    {
-      id: "5",
-      personneId: user.uid, 
-      clientLat: 12.587,
-      clientLon: -8.027,
-      destinationLat: 13.000,
-      destinationLon: -7.500,
-      destination: "katima",
-      type: "moto",
-      nmbrePers: 2,
-      prix: 5000,
-      otpCode: "98765",
-      statut: "diponible",
-      dateCreate: new Date().toISOString(),
-    },
-    {
-      id: "6",
-      personneId: user.uid, 
-      clientLat: 12.587,
-      clientLon: -8.027,
-      destinationLat: 12.590,
-      destinationLon: -8.025,
-      destination: "knati",
-      type: "voiture",
-      nmbrePers: 2,
-      prix: 5000,
-      otpCode: "98765",
-      statut: "diponible",
-      dateCreate: new Date().toISOString(),
-    }
-  ];
-
-  try {
-    const collectionRef = collection(db, "trajet");
-    const snapshot = await getDocs(collectionRef);
-
-    if (snapshot.empty) {
-      console.log("La collection 'trajet' est vide. Initialisation en cours...");
-
-      for (const trajet of trajets) {
-        const docRef = doc(collectionRef, trajet.id);
-        await setDoc(docRef, trajet);
-        console.log(`Trajet ajouté : ${trajet.id}`);
-      }
-
-      console.log("Initialisation des trajets terminée avec succès.");
-    } else {
-      console.log("Les données existent déjà dans 'trajet'. Aucune action nécessaire.");
-    }
-  } catch (error) {
-    console.error("Erreur lors de l'initialisation des trajets :", error);
-  }
-};
+const db1 = getDatabase();
 
 // Récupère les trajets disponibles dans un rayon de 3 km.
+// export const fetchTrajetsInRadius = async (
+//   chauffeurLat: number,
+//   chauffeurLon: number
+// ): Promise<trajet[]> => {
+//   const tempsLimit = new Date(Date.now() - 3600 * 1000);
+//   try {
+//     const trajetsRef = ref(db1, "trajets");
+//     const snapshot = await get(trajetsRef);
+//     if (!snapshot.exists()) return [];
+
+//     const trajets: trajet[] = Object.entries(snapshot.val()).map(([id, data]) => ({
+//       id,
+//       ...(data as trajet),
+//     }));
+
+//     console.log("Trajets disponibles avant filtrage :", trajets);
+
+//     // Filtrer les trajets avec un statut "Encours" 
+//     const trajetsDisponibles = trajets.filter((trajet) => {
+//       const createdAtDate = trajet.createAt?.toDate();
+//       return trajet.status === "Encours" && createdAtDate >= tempsLimit;
+//     });
+//         console.log("Trajets avec status 'Encours' :", trajetsDisponibles);
+//     // const trajetsDisponibles = trajets.filter((trajet) => trajet.status === "Encours");
+
+//     // Filtrer les trajets dans un rayon de 3 km
+//     const trajetsInRadius = trajetsDisponibles.filter((trajet) => {
+//       const distance = calculateDistance(
+//         chauffeurLat,
+//         chauffeurLon,
+//         trajet.userLocation.latitude,
+//         trajet.userLocation.longitude
+//       );
+
+//       console.log(`Distance pour le trajet ${trajet.id} :`, distance);
+//       return distance <= 3;
+//     });
+
+//     console.log("Trajets dans le rayon :", trajetsInRadius);
+//     return trajetsInRadius;
+//   } catch (error) {
+//     console.error("Erreur lors de la récupération des trajets :", error);
+//     return [];
+//   }
+// };
+
 export const fetchTrajetsInRadius = async (
   chauffeurLat: number, 
   chauffeurLon: number
 ): Promise<trajet[]> => {
-  const R = 6371; // Rayon de la Terre en km
-  const maxDistance = 3; // Rayon de recherche en km
+  // Rayon de la Terre en km
+  const R = 6371; 
+  // Rayon de recherche en km
+  const maxDistance = 3;
+  const tempsLimit = new Date(Date.now() - 3600 * 1000);
 
   try {
     const collectionRef = collection(db, "trajet");
-    const snapshot = await getDocs(collectionRef);
+    const snapshot = await getDocs(collectionRef); 
 
     console.log("Nombre de trajets récupérés :", snapshot.docs.length);
 
     // Map des trajets en typant explicitement les données extraites
     const trajets: trajet[] = snapshot.docs
       .map((doc) => {
-        const data = doc.data() as trajet; // Cast explicite
-        return { ...data, id: doc.id }; // Ajoute `id` sans duplication
+        const data = doc.data() as trajet;
+        return { ...data, id: doc.id };
       })
       console.log("Trajets disponibles avant filtrage :", trajets);
 
-    // Filtrer uniquement les trajets avec un statut "disponible"
-    const trajetsDisponibles = trajets.filter((doc) => doc.statut === "Encours");
-    console.log("Trajets avec statut 'Encours' :", trajetsDisponibles);
+    // Filtrer uniquement les trajets avec un status "Encours" 
+    const trajetsDisponibles = trajets.filter((trajet) => { 
+      return trajet.status === "Encours" && trajet.createdAt.toDate() >= tempsLimit;
+    });
+    console.log("Trajets avec status 'Encours' :", trajetsDisponibles);
 
     // Filtrer les trajets dans un rayon de 3 km
     const trajetsInRadius = trajetsDisponibles.filter((trajet) => {
       const distance = calculateDistance(
         chauffeurLat,
         chauffeurLon,
-        trajet.clientLat,
-        trajet.clientLon
+        trajet.userLocation.latitude,
+        trajet.userLocation.longitude
       );
+      
       console.log(`Distance pour le trajet ${trajet.id} :`, distance);
       return distance <= maxDistance;
-    });
+    }); 
     
     console.log("Trajets dans le rayon :", trajetsInRadius);
 
@@ -196,15 +130,86 @@ const calculateDistance = (
   const R = 6371; // Rayon de la Terre en km
   return R * c;
 };
+const estimateArrivalTime = (distance: number, type: string): string => {
+  let speed = type === "moto" ? 40 : 60; // Vitesse en km/h (moto 40 km/h, voiture 60 km/h)
+  let timeInHours = distance / speed;
+  let timeInMinutes = Math.ceil(timeInHours * 60);
 
-export const updateTrajetStatus = async (trajetId: string, statut: "accepter") : Promise<void> => {
+  const currentTime = new Date();
+  currentTime.setMinutes(currentTime.getMinutes() + timeInMinutes);
+
+  return currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+};
+
+export const updateTrajetStatus = async (trajetId: string, status: "accepter" | "terminer", chauffeurId?: string) : Promise<void> => {
   try {
     const trajetRef = doc(db, "trajet", trajetId);
-    await updateDoc(trajetRef, { statut }); 
-    console.log(`Statut du trajet ${trajetId} mis à jour avec succès à "${statut}"`);
+    const updateData: any = { status };
+    
+    if (chauffeurId) {
+      updateData.chauffeurId = chauffeurId;
+    }
+
+    await updateDoc(trajetRef, updateData);
+    console.log(`Status du trajet ${trajetId} mis à jour avec succès à "${status}"`);
   } catch (error) {
-    console.error("Erreur lors de la mise à jour du statut de trajet :", error);
+    console.error("Erreur lors de la mise à jour du status du trajet :", error);
     throw error;
+  }
+};
+
+// Fonction pour récupérer un trajet et l'utilisateur associé
+export const fetchTrajet = async (trajetId: string): Promise<{ trajet: trajet | null, personne: personne | null }> => {
+  if (!trajetId) throw new Error("Aucun trajetId fournis");
+
+  try {
+    const trajetRef = doc(db, "trajet", trajetId);
+    const trajetSnap = await getDoc(trajetRef);
+
+    if (!trajetSnap.exists()) return { trajet: null, personne: null };
+
+    const trajetData = trajetSnap.data() as trajet;
+
+    let personneData: personne | null = null;
+    if (trajetData.userId) {
+      const personneRef = doc(db, "personne", trajetData.userId);
+      const personneSnap = await getDoc(personneRef);
+      if (personneSnap.exists()) {
+        personneData = personneSnap.data() as personne;
+      }
+    }
+
+    return { trajet: trajetData, personne: personneData };
+  } catch (error) {
+    console.error("Erreur lors de la récupération du trajet :", error);
+    return { trajet: null, personne: null };
+  }
+};
+
+// Fonction pour terminer un trajet et créer un historique
+export const terminerTrajet = async (trajetId: string) => {
+  if (!trajetId) throw new Error("Aucun trajetId fourni");
+  const auth = getAuth();
+  const user = auth.currentUser;
+  
+  if (!user) {
+    throw new Error('Utilisateur non connecté.');
+  }
+
+  try {
+    // Mettre à jour le statut du trajet à "Terminer"
+    const trajetRef = doc(db, "trajet", trajetId);
+    await updateDoc(trajetRef, { status: "terminer" });
+
+    // Ajouter un historique du trajet
+    const historique: historiqueTrajet = {
+      trajetId,
+      chauffeurId : user.uid, 
+    };
+    await addDoc(collection(db, "historiqueTrajet"), historique);
+    console.log("Trajet terminé et ajouté à l'historique");
+  } catch (error) {
+    console.error("Erreur lors de la finalisation du trajet :", error);
   }
 };
 
@@ -219,7 +224,7 @@ export const verifierOtpTrajet = async (trajetId: string, otpSaisi: string) => {
     }
 
     const trajetData = trajetSnap.data();
-    if (trajetData.otpCode === otpSaisi) {
+    if (trajetData.otp === otpSaisi) {
       return { success: true };
     } else {
       return { success: false, message: "OTP incorrect" };
@@ -230,185 +235,20 @@ export const verifierOtpTrajet = async (trajetId: string, otpSaisi: string) => {
   }
 };
 
-// import { db } from "@/firebaseConfig";
-// import { trajet } from "@/interface/trajet";
-// import { getAuth } from 'firebase/auth'; 
-// import { AppDispatch } from '@/redux/store';
-// import { setLoading, setError, setTrajets, updateTrajetStatut  } from '@/redux/slices/trajetSlice';
-
-// // Initialise la collection `trajet` avec des valeurs par défaut si elle est vide.
-// export const initializeTrajets = () => async (dispatch: AppDispatch): Promise<void> => {
-//   dispatch(setLoading(true));
-//   try{
-//     const auth = getAuth();
-//     const user = auth.currentUser;
-  
-//     if (!user) {
-//       throw new Error('Utilisateur non connecté.');
-//     }
-//     const trajets: trajet[] = [
-//     {
-//       id: "1",
-//       personneId: user.uid,
-//       clientLat: 12.0,
-//       clientLon: -8.0,
-//       destinationLat: 12.1,
-//       destinationLon: -8.1,
-//       destination: "kati",
-//       type: "voiture",
-//       nmbrePers: 3,
-//       prix: 4000,
-//       otpCode: "123456",
-//       statut: "diponible",
-//       dateCreate: new Date().toISOString()
-//     },
-//     {
-//       id: "2",
-//       personneId: user.uid,
-//       clientLat: 12.05,
-//       clientLon: -8.02,
-//       destinationLat: 12.15,
-//       destinationLon: -8.12,
-//       destination: "kati",
-//       type: "moto",
-//       nmbrePers: 2,
-//       prix: 500,
-//       otpCode: "654321",
-//       statut: "diponible",
-//       dateCreate: new Date().toISOString()
-//     },
-//     {
-//       id: "3",
-//       personneId: user.uid, 
-//       clientLat: 12.621,
-//       clientLon: -8.035,
-//       destinationLat: 12.622,
-//       destinationLon: -8.034,
-//       destination: "kati",
-//       type: "voiture",
-//       nmbrePers: 1,
-//       prix: 5000,
-//       otpCode: "987654",
-//       statut: "diponible",
-//       dateCreate: new Date().toISOString()
-//     },
-//     {
-//       id: "4",
-//       personneId: user.uid, 
-//       clientLat: 12.621,
-//       clientLon: -8.035,
-//       destinationLat: 12.622,
-//       destinationLon: -8.034,
-//       destination: "kati",
-//       type: "moto",
-//       nmbrePers: 2,
-//       prix: 5000,
-//       otpCode: "987654",
-//       statut: "diponible",
-//       dateCreate: new Date().toISOString()
-//     },
-//     ]; 
-//     const collectionRef = collection(db, "trajet");
-//     const snapshot = await getDocs(collectionRef);
-
-//     if (snapshot.empty) {
-//       console.log("La collection 'trajet' est vide. Initialisation en cours...");
-
-//       for (const trajet of trajets) {
-//         const docRef = doc(collectionRef, trajet.id);
-//         await setDoc(docRef, trajet);
-//         console.log(`Trajet ajouté : ${trajet.id}`);
-//       }
-//       dispatch(setLoading(false));
-//       console.log("Initialisation des trajets terminée avec succès.");
-//     } else {
-//       console.log("Les données existent déjà dans 'trajet'. Aucune action nécessaire.");
-//     }
-//   } catch (error) {
-//     console.error("Erreur lors de l'initialisation des trajets :", error);
-//   }
-// };
-
-// // Récupère les trajets disponibles dans un rayon de 3 km.
-// export const fetchTrajetsInRadius = (chauffeurLat: number, chauffeurLon: number) => async (dispatch: AppDispatch): Promise<void> => {
-//   dispatch(setLoading(true));
-//   const R = 6371; // Rayon de la Terre en km
-//   const maxDistance = 3; // Rayon de recherche en km
-
-//   try {
-//     const collectionRef = collection(db, "trajet");
-//     const snapshot = await getDocs(collectionRef);
-
-//     console.log("Nombre de trajets récupérés :", snapshot.docs.length);
-
-//     // Map des trajets en typant explicitement les données extraites
-//     const trajets: trajet[] = snapshot.docs
-//       .map((doc) => {
-//         const data = doc.data() as trajet; // Cast explicite
-//         return { ...data, id: doc.id }; // Ajoute `id` sans duplication
-//       })
-//       console.log("Trajets disponibles avant filtrage :", trajets);
-
-//     // Filtrer uniquement les trajets avec un statut "disponible"
-//     const trajetsDisponibles = trajets.filter((doc) => doc.statut === "diponible");
-//     console.log("Trajets avec statut 'disponible' :", trajetsDisponibles);
-
-//     // Filtrer les trajets dans un rayon de 3 km
-//     const trajetsInRadius = trajetsDisponibles.filter((trajet) => {
-//       const distance = calculateDistance(
-//         chauffeurLat,
-//         chauffeurLon,
-//         trajet.clientLat,
-//         trajet.clientLon
-//       );
-//       console.log(`Distance pour le trajet ${trajet.id} :`, distance);
-//       return distance <= maxDistance;
-//     });
+export const refuserTrajetStatus = async (trajetId: string, status: "annuler", chauffeurId?: string) : Promise<void> => {
+  try {
+    const trajetRef = doc(db, "trajet", trajetId);
+    const updateData: any = { status };
     
-//     console.log("Trajets dans le rayon :", trajetsInRadius);
+    if (chauffeurId) {
+      updateData.chauffeurId = chauffeurId;
+    }
 
-//     dispatch(setTrajets(trajetsInRadius));
-//   } catch (error:any) {
-//     dispatch(setError(error.message || "Une erreur s'est produite"));
-//   } finally {
-//     dispatch(setLoading(false));
-//   } 
-// };
-
-// //Calcule la distance entre deux points GPS en km.
-// const calculateDistance = (
-//   lat1: number,
-//   lon1: number,
-//   lat2: number,
-//   lon2: number
-// ): number => {
-//   const toRadians = (deg: number) => (deg * Math.PI) / 180;
-
-//   const dLat = toRadians(lat2 - lat1);
-//   const dLon = toRadians(lon2 - lon1);
-
-//   const a =
-//     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-//     Math.cos(toRadians(lat1)) *
-//       Math.cos(toRadians(lat2)) *
-//       Math.sin(dLon / 2) *
-//       Math.sin(dLon / 2);
-
-//   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-//   const R = 6371; // Rayon de la Terre en km
-//   return R * c;
-// };
-
-// export const updateTrajetStatus = async (trajetId: string, statut: "accepter") => async (dispatch: AppDispatch) : Promise<void> => {
-//   dispatch(setLoading(true));
-//   try {
-//     const trajetRef = doc(db, "trajet", trajetId);
-//     await updateDoc(trajetRef, { statut }); 
-//     console.log(`Statut du trajet ${trajetId} mis à jour avec succès à "${statut}"`);
-//     dispatch(updateTrajetStatut({ id: trajetId, statut }));
-//   } catch (error:any) {
-//     dispatch(setError(error.message || "Une erreur s'est produite"));
-//   } finally {
-//     dispatch(setLoading(false));
-//   }
-// };
+    await updateDoc(trajetRef, updateData);
+    console.log(`Status du trajet ${trajetId} mis à jour avec succès à "${status}"`);
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour du status du trajet :", error);
+    throw error;
+  }
+};
+ 

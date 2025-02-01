@@ -7,8 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSearchParams } from "expo-router/build/hooks";
 import { Create } from '@/services/authService'; 
 import { useDispatch } from "react-redux";
-import Blur from "@/components/loader";
-import { router } from "expo-router"; 
+import Blur from "@/components/loader"; 
 
 const Inscription = ({ navigation }: any) => {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);

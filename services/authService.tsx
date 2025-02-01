@@ -1,7 +1,7 @@
 import { auth, db } from "@/firebaseConfig";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "firebase/auth";
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { setUser, clearUser } from "@/redux/slices/userSlice";
+import { setUser, clearUser } from "@/reduxfordriver/slices/userSlice";
 import { Dispatch } from "@reduxjs/toolkit"; 
 import { personne } from "@/interface/personne";
 import { router } from "expo-router";

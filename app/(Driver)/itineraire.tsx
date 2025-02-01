@@ -1,16 +1,17 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, Image, StyleSheet, TouchableOpacity, Dimensions, } from "react-native";
+import { View, Text, Image, StyleSheet, TouchableOpacity, Dimensions, Modal, } from "react-native";
 import * as Location from "expo-location";
-import { GestureHandlerRootView, PanGestureHandler, State, PanGestureHandlerGestureEvent } from "react-native-gesture-handler";
+import { GestureHandlerRootView, PanGestureHandler, State, PanGestureHandlerGestureEvent, TextInput } from "react-native-gesture-handler";
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { COLORS } from "@/constants/styles"; 
-import Map2 from "@/components/MapItineraire";  
-import { useSearchParams } from "expo-router/build/hooks";
-import { doc, getDoc, getFirestore } from "firebase/firestore";
+import { COLORS } from "@/constants/styles";
+import Map2 from "@/components/MapItineraire";
+import { useLocalSearchParams, useSearchParams } from "expo-router/build/hooks";
 import { trajet } from "@/interface/trajet";
 import { personne } from "@/interface/personne";
+import { fetchTrajet, terminerTrajet } from "@/services/trajetService";
+import { setLoading } from "@/redux/slices/trajetSlice";
 
 
 const { height } = Dimensions.get("window");
@@ -25,52 +26,31 @@ type LocationType = {
 
 const Itineraire = () => {
   const router = useRouter();
-  const [userLocation, setUserLocationState] = useState<LocationType | null>(null);
+  const params = useLocalSearchParams(); 
+  const searchParams = useSearchParams();
+  const trajetId = params.trajetId as string; 
+
   const [tripStage, setTripStage] = useState<"pickup" | "dropoff">("pickup");
   const [trajetData, setTrajetData] = useState<trajet | null>(null);
   const [personneData, setPersonneData] = useState<personne | null>(null);
-  const infoParams = useSearchParams();
-  const [destination, setDestination] = useState<LocationType | null>(null); 
-  const translateY = useSharedValue(0);
+  const [userLocation, setUserLocationState] = useState<LocationType | null>(null);
+  const [destination, setDestination] = useState<LocationType | null>(null);
+  const [modalVisible, setModalVisible] = useState(false); 
+  const [cancelReason, setCancelReason] = useState("");
   const [isCollapsed, setIsCollapsed] = useState(false); 
-  const trajetId = infoParams.get("trajetId"); 
+  const translateY = useSharedValue(0);
 
-    // Récupération des données du trajet depuis Firestore
-    useEffect(() => {
-      const fetchTrajet = async () => {
-        if (!trajetId) return;
-  
-        try {
-          const db = getFirestore();
-          const trajetRef = doc(db, "trajet", trajetId);
-          const trajetSnap = await getDoc(trajetRef);
-  
-          if (trajetSnap.exists()) {
-            const data = trajetSnap.data() as trajet; // Cast des données en type Trajet
-            setTrajetData(data);
-          // Récupérer les informations de la personne
-          if (data.personneId) {
-            const personneRef = doc(db, "personne", data.personneId); // Nom de votre collection "personnes"
-            const personneSnap = await getDoc(personneRef);
+  useEffect(() => {
+    const loadTrajet = async () => {
+      if (!trajetId) return;
+      const { trajet, personne } = await fetchTrajet(trajetId);
+      setTrajetData(trajet);
+      setPersonneData(personne);
+    };
 
-            if (personneSnap.exists()) {
-              setPersonneData(personneSnap.data() as personne);
-            }
-            } else {
-              console.error("Personne introuvable !");
-            }
-          } else {
-            console.error("Trajet introuvable !");
-          }
-        } catch (error) {
-          console.error("Erreur lors de la récupération du trajet :", error);
-        }
-      };
-  
-      fetchTrajet();
-    }, [trajetId]);
+    loadTrajet();
+  }, [trajetId]);
 
-  
   useEffect(() => {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -92,28 +72,19 @@ const Itineraire = () => {
 
       if (tripStage === "pickup") {
         setDestination({
-          latitude: trajetData?.destinationLat ?? currentLocation.latitude,
-          longitude: trajetData?.destinationLon ?? currentLocation.longitude,
-          address: trajetData?.destinationAddress ?? "Destination par défaut",
+          latitude: trajetData?.userLocation.latitude ?? currentLocation.latitude,
+          longitude: trajetData?.userLocation.longitude ?? currentLocation.longitude,
+          address: trajetData?.userLocation.address ?? "Destination par défaut",
+        });
+      }else{
+        setDestination({
+          latitude: trajetData?.destination?.latitude ?? currentLocation.latitude,
+          longitude: trajetData?.destination?.longitude ?? currentLocation.longitude,
+          address: trajetData?.destination?.address ?? "Destination par défaut"
         });
       }
     })();
   }, [trajetData, tripStage]); 
-
-  const handleNextStage = () => {
-    if (tripStage === "pickup") {
-      router.push({
-        pathname: "/(Driver)/otp",
-        params: { trajetId },
-      }); 
-    } else if (tripStage === "dropoff") {
-      alert("Trajet terminé !");
-      router.push("/(Driver)/trajet");
-    }
-  };
-
-  const searchParams = useSearchParams();
- 
 
   useEffect(() => {
     const stage = searchParams.get("tripStage") as "pickup" | "dropoff" | null;
@@ -121,6 +92,27 @@ const Itineraire = () => {
       setTripStage(stage);
     }
   }, [searchParams]);
+
+
+  const handleNextStage = async () => {
+    if (!trajetData) return;
+
+    if (tripStage === "pickup") {
+      router.push(`/(Driver)/otp?trajetId=${trajetId}`) 
+    } else if (tripStage === "dropoff") { 
+      await terminerTrajet(trajetId);
+      alert("Trajet terminé !");
+      router.push("/(Driver)/trajet");
+    }
+  };
+
+  const confirmCancel = () => {
+    // handleCancel(cancelReason);
+    router.push(`/(Driver)/trajet`)
+    setModalVisible(false);
+
+  };
+
   
   const gestureHandler = (event: PanGestureHandlerGestureEvent) => {
     const { translationY } = event.nativeEvent;
@@ -163,15 +155,24 @@ const Itineraire = () => {
 
       {/* Détails glissables */}
       <PanGestureHandler
-        onGestureEvent={gestureHandler}
+        onGestureEvent={(event) => {
+          translateY.value = Math.min(MIN_HEIGHT, Math.max(MAX_HEIGHT, event.nativeEvent.translationY));
+        }}
         onHandlerStateChange={(event) => {
           if (event.nativeEvent.state === State.END) {
-            gestureEndHandler(event);
+            translateY.value = withSpring(event.nativeEvent.translationY > height / 4 ? MIN_HEIGHT : MAX_HEIGHT);
+            setIsCollapsed(event.nativeEvent.translationY > height / 4);
           }
         }}
+        // onGestureEvent={gestureHandler}
+        // onHandlerStateChange={(event) => {
+        //   if (event.nativeEvent.state === State.END) {
+        //     gestureEndHandler(event);
+        //   }
+        // }}
       >
         <Animated.View style={[styles.detailsContainer, animatedStyle]}>
-        {trajetData && personneData ? (
+        {/* {trajetData && personneData ? (
           <View>
             <View style={styles.handleBar} />
             <Text style={styles.arrivalTime}>Heure estimée : 15h35</Text>
@@ -181,12 +182,12 @@ const Itineraire = () => {
                 <Text style={styles.userName}>{personneData.fullName}</Text>
                 <Text style={styles.userDetails}>
                   800m (30mns){"\n"}
-                  {trajetData.destination}
+                  {trajetData.destination?.address}
                 </Text>
               </View>
             </View>
             <Text style={styles.price}>
-              Montant à payer : {trajetData.prix} XOF
+              Montant à payer : {trajetData.price} 
             </Text>
             <TouchableOpacity style={styles.actionButton} onPress={handleNextStage}>
               <Text style={styles.actionButtonText}>
@@ -196,7 +197,60 @@ const Itineraire = () => {
           </View>  
         ) : (
             <Text>Chargement des données...</Text>
+          )} */}
+          {trajetData && personneData ? (
+      <View>
+        <View style={styles.handleBar} />
+        <Text style={styles.arrivalTime}>Heure estimée : 15h35</Text>
+        <View style={styles.userInfo}>
+          <Image source={require("../../assets/image/person.jpg")} style={styles.userImage} />
+          <View>
+            <Text style={styles.userName}>{personneData.fullName}</Text>
+            <Text style={styles.userDetails}>
+              800m (30mns){"\n"}
+              {trajetData.destination?.address}
+            </Text>
+          </View>
+        </View>
+        <Text style={styles.price}>Montant à payer : {trajetData.price}</Text>
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity style={styles.actionButton} onPress={handleNextStage}>
+            <Text style={styles.actionButtonText}>
+              {tripStage === "pickup" ? "Passager récupéré" : "Trajet terminé"}
+            </Text>
+          </TouchableOpacity>
+          {tripStage !== "dropoff" && (
+            <TouchableOpacity style={styles.cancelButton} onPress={() => setModalVisible(true)}>
+              <Text style={styles.cancelButtonText}>Annuler</Text>
+            </TouchableOpacity>
           )}
+        </View>
+        {/* Modal pour saisir le motif d'annulation */}
+        <Modal visible={modalVisible} transparent animationType="slide">
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Motif d'annulation</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Saisissez votre motif"
+                value={cancelReason}
+                onChangeText={setCancelReason}
+              />
+              <View style={styles.modalButtons}>
+                <TouchableOpacity style={styles.modalButton} onPress={confirmCancel}>
+                  <Text style={styles.modalButtonText}>Valider</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.modalButton} onPress={() => setModalVisible(false)}>
+                  <Text style={styles.modalButtonText}>Annuler</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      </View>
+    ) : (
+      <Text>Chargement des données...</Text>
+    )}
         </Animated.View>
       </PanGestureHandler>
     </GestureHandlerRootView>
@@ -270,6 +324,63 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
+  cancelButton: {
+    backgroundColor: "red",
+    padding: 12,
+    borderRadius: 10,
+    alignItems: "center",
+    marginLeft: 10,
+  },
+  cancelButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  buttonContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  modalContent: {
+    backgroundColor: "#fff",
+    padding: 20,
+    borderRadius: 10,
+    width: "80%",
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    padding: 10,
+    borderRadius: 5,
+    marginBottom: 10,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  modalButton: {
+    backgroundColor: COLORS.primary,
+    padding: 10,
+    borderRadius: 5,
+    alignItems: "center",
+    flex: 1,
+    marginHorizontal: 5,
+  },
+  modalButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
   expandButton: {
     position: "absolute",
     bottom: 80,
@@ -281,4 +392,6 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Itineraire;
+export default Itineraire;  
+  
+ 

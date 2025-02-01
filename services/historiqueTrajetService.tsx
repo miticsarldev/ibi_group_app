@@ -1,31 +1,30 @@
-import { collection, addDoc, query, where, getDocs } from "firebase/firestore";
+import { collection, addDoc, query, where, getDocs, doc, getDoc } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
 import { historiqueTrajet } from "@/interface/historiqueTrajet";
+import { trajet } from "@/interface/trajet";
 
-
-export const createHistoriqueTrajet = async (historique: historiqueTrajet): Promise<void> => {
+export const getHistoriqueTrajets = async (chauffeurId: string): Promise<trajet[]> => {
   try {
+    // 🔹 Récupération des historiques de trajet pour le chauffeur
     const historiqueRef = collection(db, "historiqueTrajet");
-    await addDoc(historiqueRef, historique);
-  } catch (error) {
-    console.error("Erreur lors de la création de l'historique :", error);
-    throw new Error("Impossible de créer l'historique du trajet");
-  }
-};
-
-export const getHistoriqueTrajets = async (chauffeurId: string): Promise<historiqueTrajet[]> => {
-  try {
-    const trajetsRef = collection(db, "historiqueTrajet");
-    const q = query(trajetsRef, where("chauffeurId", "==", chauffeurId), where("statut", "==", "Terminer"));
+    const q = query(historiqueRef, where("chauffeurId", "==", chauffeurId));
     const querySnapshot = await getDocs(q);
 
-    const trajets: historiqueTrajet[] = [];
-    querySnapshot.forEach((doc) => {
-      const data = doc.data();
-      if (data) {
-        trajets.push({ trajetId: doc.id, ...doc.data() } as historiqueTrajet);
+    if (querySnapshot.empty) return [];
+
+    const trajets: trajet[] = [];
+
+    // 🔹 Boucle sur chaque historique pour récupérer les détails du trajet
+    for (const docSnap of querySnapshot.docs) {
+      const data = docSnap.data() as historiqueTrajet; 
+      const trajetDocRef = doc(db, "trajet", data.trajetId);
+      const trajetDocSnap = await getDoc(trajetDocRef);
+
+      if (trajetDocSnap.exists()) {
+        const trajetData = trajetDocSnap.data() as trajet; // 🔹 Cast explicite en trajet
+        trajets.push({ id: trajetDocSnap.id, ...trajetData });
       }
-    });
+    }
 
     return trajets;
   } catch (error) {

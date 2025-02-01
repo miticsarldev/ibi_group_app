@@ -1,10 +1,14 @@
 import React, { useState } from "react";
 import { ScrollView, View, Text, TextInput, StyleSheet, TouchableOpacity, Image } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { COLORS } from "../../constants/styles";
+import * as ImagePicker from "expo-image-picker";
+import * as FileSystem from "expo-file-system";
+import { COLORS } from "@/constants/styles";
 import { router } from "expo-router";
 
 const ProfileScreen = () => {
+  const [ image, setImage ] = useState(null);
+  const [ uploading, setUploading ] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "Admin Admin",
     phone: "75757575",
@@ -17,6 +21,31 @@ const ProfileScreen = () => {
   const handleInputChange = (field: string, value: string) => {
     setFormData((prevState) => ({ ...prevState, [field]: value }));
   };
+
+  const imagePick = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      allowsEditing: true,
+      aspect: [4,3],
+      quality: 1
+    });
+
+    if(!result.canceled){
+      // setImage(result.assets[0].uri);
+    } 
+  }; 
+
+  //envois du files
+  const uploadMedia = async () =>{
+    setUploading(true);
+  }
+
+  // try {
+  //   const { uri } = await FileSystem.getInfoAsync(image);
+  // } catch (error) {
+    
+  // }
+ 
 
   return (
     <View style={styles.container}>

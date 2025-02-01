@@ -1,15 +1,15 @@
  import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image } from 'react-native';
 import ToastMessage from '@/components/ToastMessage';
-import { initializeTrajets, fetchTrajetsInRadius, updateTrajetStatus } from "@/services/trajetService";
+import { fetchTrajetsInRadius, updateTrajetStatus } from "@/services/trajetService";
 import { COLORS, FONTS, SIZES } from '@/constants/styles';
-import { trajet } from '@/interface/trajet';
-import { createHistoriqueTrajet } from "@/services/historiqueTrajetService";
-import { historiqueTrajet } from "@/interface/historiqueTrajet";
+import { trajet } from '@/interface/trajet'; 
 import * as Location from "expo-location";
 import { useLocationStore } from "@/store/useStore"; 
 import { getAuth } from 'firebase/auth';
 import { useRouter } from 'expo-router';
+import Blur from '@/components/loader';
+import { Timestamp } from "firebase/firestore"; 
 
 interface Toast {
   message: string;
@@ -23,6 +23,14 @@ const TrajetDisponible: React.FC<{ chauffeurLat: number; chauffeurLon: number }>
   const [toast, setToast] = useState<Toast>({ message: "", type: "success", visible: false });
   const [loading, setLoading] = useState(true);
   const router = useRouter(); 
+  const [trajetAccepte, setTrajetAccepte] = useState<string | null>(null);
+
+  const auth = getAuth();
+  const user = auth.currentUser;
+
+  if (!user) {
+    throw new Error('Utilisateur non connecté.');
+  }
 
   const initializeAndLoadData = async () => {
     setLoading(true);
@@ -54,15 +62,15 @@ const TrajetDisponible: React.FC<{ chauffeurLat: number; chauffeurLon: number }>
         address: `${address[0].name}, ${address[0].region}`,
       });
 
-      // Initialisation des trajets (si nécessaire)
-      await initializeTrajets();
-
       // Chargement des trajets dans le rayon
       const data = await fetchTrajetsInRadius(location.coords.latitude, location.coords.longitude);
       console.log("Réponse de fetchTrajetsInRadius :", data);
-      setTrajets(data); 
+      // setTrajets(data); 
+      setTrajets(Array.isArray(data) ? data : []);
     } catch (error) {
       setToast({ message: "Erreur lors du chargement des trajets ou de la localisation", type: "error", visible: true });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -71,52 +79,21 @@ const TrajetDisponible: React.FC<{ chauffeurLat: number; chauffeurLon: number }>
   }, []);
 
   const handleAccept = async (trajet: trajet) => {
-      const auth = getAuth();
-      const user = auth.currentUser;
-      
-      if (!user) {
-        throw new Error('Utilisateur non connecté.');
-      }
+    setLoading(true);
     try {
-      await updateTrajetStatus(trajet.id, "accepter");
+      const chauffeurId = user.uid;
+
+      await updateTrajetStatus(trajet.id, "accepter", chauffeurId);
       setToast({ message: "Trajet accepté", type: "success", visible: true });
-      
-      // Récupérer la position actuelle du chauffeur
-      const location = await Location.getCurrentPositionAsync({});
-      const geocodedAddresses = await Location.reverseGeocodeAsync({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-      });
-      
-      // Vérifie s'il y a au moins une adresse trouvée
-      const depart = geocodedAddresses.length > 0
-      ? (geocodedAddresses[0].street ?? geocodedAddresses[0].subregion ?? geocodedAddresses[0].city ?? "Adresse inconnue")
-      : "Adresse inconnue";
 
-
-      // Construire l'objet HistoriqueTrajet
-      const historique: historiqueTrajet = {
-        trajetId: trajet.id,
-        chauffeurId: user.uid,
-        statut: "Encours",
-        depart, 
-        destination: trajet.destination,
-        createdAt: new Date().toISOString(),
-        montant: trajet.prix,
-      };
-      // Appeler le service pour enregistrer l'historique
-      await createHistoriqueTrajet(historique);
-      
       // Supprimer le trajet accepté de la liste locale
-      setTrajets((prev) => prev.filter((t) => t.id !== trajet.id));
-
-      // Rediriger vers l'itinéraire
-      router.push({
-        pathname: "/(Driver)/itineraire",
-        params: { trajetId : trajet.id},
-      });
+      setTrajets((prev) => prev.filter((t) => t.id !== trajet.id || t.chauffeurId === chauffeurId));
+      
+      router.push(`/(Driver)/itineraire?trajetId=${trajet.id}`)
     } catch {
       setToast({ message: "Erreur lors de l'acceptation", type: "error", visible: true });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -134,40 +111,66 @@ const TrajetDisponible: React.FC<{ chauffeurLat: number; chauffeurLon: number }>
   };
 
   // Fonction utilitaire pour calculer le temps écoulé en minutes
-  const getTimeElapsedInMinutes = (dateISOString: string | null | undefined): string => {
-    if (!dateISOString) return "Temps non spécifié";
+  const getTimeElapsedInMinutes = (dateValue: Timestamp | string | null | undefined): string => {
+    if (!dateValue) return "Temps non spécifié";
   
     const currentDate = new Date();
-    const givenDate = new Date(dateISOString);
+    let givenDate: Date;
   
-    // Vérifie si la conversion en date est valide
+    // Vérification du type de dateValue (Timestamp ou string)
+    if (dateValue instanceof Timestamp) {
+      givenDate = dateValue.toDate();
+    } else {
+      givenDate = new Date(dateValue);
+    }
+  
+    // Si la date est invalide, retour d'une valeur d'erreur
     if (isNaN(givenDate.getTime())) {
       return "Date invalide";
     }
   
-    const elapsedTime = Math.floor((currentDate.getTime() - givenDate.getTime()) / 60000); // Différence en minutes
+    const elapsedTimeInMinutes = Math.floor((currentDate.getTime() - givenDate.getTime()) / 60000); // Temps écoulé en minutes
   
-    if (elapsedTime < 1) {
+    // Si l'écart est inférieur à 1 minute
+    if (elapsedTimeInMinutes < 1) {
       return "Moins d'une minute";
-    } else if (elapsedTime === 1) {
-      return "1 minute";
-    } else {
-      return `${elapsedTime} minutes`;
     }
-  };
   
+    // Si l'écart est inférieur à 60 minutes, retourne les minutes
+    if (elapsedTimeInMinutes < 60) {
+      return `${elapsedTimeInMinutes} min${elapsedTimeInMinutes > 1 ? 's' : ''}`;
+    }
+  
+    // Si l'écart est supérieur à 60 minutes, afficher l'heure et la date
+    const hours = Math.floor(elapsedTimeInMinutes / 60);
+    const minutes = elapsedTimeInMinutes % 60;
+  
+    // Formater la date au format "jj/mm/aaaa"
+    const formattedDate = givenDate.toLocaleDateString('fr-FR');
+  
+    // Vérifier si l'heure est proche de 23h59
+    const currentTime = new Date();
+    if (currentTime.getHours() === 23 && currentTime.getMinutes() === 59) {
+      return formattedDate; // Renvoie uniquement la date sans l'heure
+    }
+  
+    const formattedTime = givenDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  
+    return `${hours} h${hours > 1 ? 's' : ''} ${minutes} min${minutes > 1 ? 's' : ''} `;
+  };
+
 
   const renderTrajet = ({ item }: { item: trajet }) => (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
         <Text style={styles.carType}>{item.type ?? "Type non spécifié"}</Text>
-        <Text style={styles.infoText}>{item.nmbrePers ? `${item.nmbrePers} prs` : "Nombre de personnes inconnu"} | Il y'a {getTimeElapsedInMinutes(item.dateCreate)}</Text>
+        <Text style={styles.infoText}>Il y'a {getTimeElapsedInMinutes(item.createdAt)}</Text>
       </View>
       <View style={styles.cardContent}>
         <View style={styles.carDetails}>
-          <Text style={styles.infoText}>{item.destination ?? "Localisation inconnue"}</Text>
-          <Text style={styles.infoText}>{item.distance ? `${item.distance} km` : "Distance non spécifiée"}</Text>
-          <Text style={styles.infoText}>{item.prix ? `${item.prix} CFA` : "Prix non spécifié"}</Text>
+          <Text style={styles.infoText}> {item.userLocation?.address ? `${item.userLocation?.address}` : "Adresse inconue"}</Text>
+          <Text style={styles.infoText}> 8km </Text>
+          <Text style={styles.infoText}>{item.price ? `${item.price}` : "Prix non spécifié"}</Text>
         </View>
         {item.type == "moto" ? (
           <Image source={require("../../assets/image/motoba.png")} style={styles.carImage} />
@@ -176,29 +179,46 @@ const TrajetDisponible: React.FC<{ chauffeurLat: number; chauffeurLon: number }>
         )}
       </View>
       <View style={styles.cardActions}>
-        <TouchableOpacity style={styles.refuserButton} onPress={() => handleReject(item.id)}>
+        <TouchableOpacity style={styles.refuserButton} onPress={() => handleReject(item.id)} >
           <Text style={styles.buttonText}>Refuser</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.accepterButton} onPress={() => handleAccept(item)}>
+        {/* <TouchableOpacity style={styles.accepterButton} onPress={() => handleAccept(item)} disabled={loading}> */}
+        {item.id === trajetAccepte ? (
+        <TouchableOpacity style={styles.encoursButton} disabled>
+          <Text style={styles.buttonText}>EnCours</Text>
+        </TouchableOpacity>
+      ) : (
+        <TouchableOpacity 
+          style={styles.accepterButton} 
+          onPress={() => {
+            handleAccept(item);
+            setTrajetAccepte(item.id);
+          }} 
+          disabled={!!trajetAccepte || loading}
+        >
           <Text style={styles.buttonText}>Accepter</Text>
         </TouchableOpacity>
+        )}
       </View>
     </View>
   );
 
   return (
     <View style={styles.container}>
-      <FlatList
-        data={trajets}
-        renderItem={renderTrajet}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>Aucun trajet disponible.</Text>
-          </View>
-        }
-      />
+      <Blur loading={loading} />
+      {trajets.length === 0 ? (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Text style={{ fontSize: 18, color: 'black' }}>
+            Aucun trajet disponible dans votre entourage.
+            </Text>
+            </View>
+            ) : (
+            <FlatList
+            data={trajets}
+            renderItem={renderTrajet}
+            keyExtractor={(item) => item.id}
+            />
+            )}
       <ToastMessage
         message={toast.message}
         type={toast.type}
@@ -297,6 +317,13 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: SIZES.base,
   },
+  encoursButton: {
+    flex: 1,
+    backgroundColor: COLORS.primary,
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: "center",
+  },
   accepterButton: {
     backgroundColor: COLORS.primary,
     borderRadius: SIZES.radius,
@@ -313,212 +340,3 @@ const styles = StyleSheet.create({
 });
 
 export default TrajetDisponible;
-
-
-
-
-
-
-
-
-
-// import React, { useState } from 'react';
-// import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image } from 'react-native';
-// import { Ionicons } from '@expo/vector-icons';
-// import { COLORS, FONTS, SIZES } from "../../constants/styles"; 
-// import { DrawerNavigationProp } from '@react-navigation/drawer';
-// import { router } from 'expo-router';
-
-// // Typage des trajets
-// interface Trajet {
-//   id: number;
-//   type: string;
-//   localisation: string;
-//   personnes: number;
-//   temps: string;
-//   distance: string;
-//   prix: string;
-//   image: any;
-// }
-
-// // Typage de navigation
-// type RootStackParamList = {
-//   TrajetDisponible: undefined;
-// };
-
-// type NavigationProp = DrawerNavigationProp<RootStackParamList, 'TrajetDisponible'>;
-
-// interface TrajetDisponibleProps {
-//   navigation: NavigationProp;
-// }
-
-// const TrajetDisponible: React.FC<TrajetDisponibleProps> = ({ navigation }) => {
-//   const [isSidebarOpen, setSidebarOpen] = useState(false);
-
-//   const toggleSidebar = () => {
-//     setSidebarOpen(!isSidebarOpen);
-//     console.log("Sidebar toggled:", isSidebarOpen);
-//   };
-
-//   const handleNext = () => {
-//     router.navigate('/(Driver)/itineraire'); 
-//   }
-//   const trajets: Trajet[] = [
-//     {
-//       id: 1,
-//       type: 'Super Car',
-//       localisation: 'Lafiabougou',
-//       personnes: 2,
-//       temps: 'il y a 3 mins',
-//       distance: '800m (à 5 mins)',
-//       prix: '500 CFA',
-//       image: require('../../assets/image/voiture.png'),
-//     },
-//     {
-//       id: 2,
-//       type: 'Car Eco',
-//       localisation: 'Kati',
-//       personnes: 1,
-//       temps: 'il y a 23 mins',
-//       distance: '900m (à 5 mins)',
-//       prix: '1000 CFA',
-//       image: require('../../assets/image/personnel.png'),
-//     },
-//   ];
-
-//   const renderTrajet = ({ item }: { item: Trajet }) => (
-
-//     <View style={styles.card}>
-//       {/* Titre et info principale */}
-//       <View style={styles.cardHeader}>
-//         <Text style={styles.carType}>{item.type}</Text>
-//         <Text style={styles.infoText}>{item.personnes} prs | {item.temps}</Text>
-//       </View>
-
-//       {/* Contenu principal avec détails et image */}
-//       <View style={styles.cardContent}>
-//         <View style={styles.carDetails}>
-//           <View style={styles.row}>
-//             <Ionicons name="location-outline" size={16} color="#00A76E" />
-//             <Text style={styles.infoText}>{item.localisation}</Text>
-//           </View>
-//           <View style={styles.row}>
-//             <Ionicons name="walk-outline" size={16} color="#00A76E" />
-//             <Text style={styles.infoText}>{item.distance}</Text>
-//           </View>
-//           <View style={styles.row}>
-//             <Ionicons name="cash-outline" size={16} color="#00A76E" />
-//             <Text style={styles.infoText}>{item.prix}</Text>
-//           </View>
-//         </View>
-//         <Image source={item.image} style={styles.carImage} />
-//       </View>
-
-//       {/* Boutons d'action */}
-//       <View style={styles.cardActions}>
-//         <TouchableOpacity style={styles.refuserButton}>
-//           <Text style={styles.buttonText}>Refuser</Text>
-//         </TouchableOpacity>
-//         <TouchableOpacity onPress={handleNext} style={styles.accepterButton}>
-//           <Text style={styles.buttonText}>Accepter</Text>
-//         </TouchableOpacity>
-//       </View>
-//     </View>
-//   );
-
-//   return (
-//     <View style={styles.container}> 
-
-//       <FlatList
-//         data={trajets}
-//         renderItem={renderTrajet}
-//         keyExtractor={(item) => item.id.toString()}
-//         contentContainerStyle={styles.list}
-//       />
-//     </View>
-//   );
-// };
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     backgroundColor: COLORS.gray,
-//   },
-//   list: {
-//     padding: SIZES.padding,
-//   },
-//   card: {
-//     backgroundColor: COLORS.white,
-//     borderRadius: SIZES.radius,
-//     padding: SIZES.padding,
-//     marginBottom: SIZES.padding,
-//     shadowColor: COLORS.black,
-//     shadowOpacity: 0.1,
-//     shadowRadius: 4,
-//     shadowOffset: { width: 0, height: 2 },
-//     elevation: 4,
-//   },
-//   cardHeader: {
-//     flexDirection: 'row',
-//     justifyContent: 'space-between',
-//     marginBottom: SIZES.base,
-//   },
-//   carType: {
-//     fontSize: SIZES.font,
-//     fontWeight: 'bold',
-//     color: COLORS.text,
-//   },
-//   infoText: {
-//     fontSize: SIZES.font - 2,
-//     color: COLORS.darkGray,
-//     marginLeft: 4,
-//   },
-//   cardContent: {
-//     flexDirection: 'row',
-//     justifyContent: 'space-between',
-//     alignItems: 'center',
-//     marginBottom: SIZES.base,
-//   },
-//   carDetails: {
-//     flex: 1,
-//   },
-//   carImage: {
-//     width: 100,
-//     height: 60,
-//     borderRadius: SIZES.radius,
-//   },
-//   row: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     marginBottom: 4,
-//   },
-//   cardActions: {
-//     flexDirection: 'row',
-//     justifyContent: 'space-between',
-//   },
-//   refuserButton: {
-//     flex: 1,
-//     backgroundColor: COLORS.darkGray,
-//     paddingVertical: SIZES.base,
-//     borderRadius: SIZES.radius,
-//     marginRight: SIZES.base,
-//     alignItems: 'center',
-//   },
-//   accepterButton: {
-//     flex: 1,
-//     backgroundColor: COLORS.primary,
-//     paddingVertical: SIZES.base,
-//     borderRadius: SIZES.radius,
-//     marginLeft: SIZES.base,
-//     alignItems: 'center',
-//   },
-//   buttonText: {
-//     color: COLORS.white,
-//     fontSize: SIZES.font - 2,
-//     fontWeight: 'bold',
-//   },
-// });
-
-// export default TrajetDisponible;
-
-
