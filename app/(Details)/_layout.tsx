@@ -7,6 +7,7 @@ export default function DetailsLayout() {
       <Stack.Screen name="Destination"/>
       <Stack.Screen name="SetPassword"/>
       <Stack.Screen name="DeletAccount"/>
+      <Stack.Screen name="Note"/>
     </Stack>
   );
 }

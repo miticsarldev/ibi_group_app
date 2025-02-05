@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from "react";
-import * as Location from "expo-location";
+import React, { useState } from "react";
 import {
   Modal,
   View,
@@ -7,14 +6,10 @@ import {
   TouchableOpacity,
   StyleSheet,
   Image,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
 } from "react-native";
 import GoogleTextInput from "@/components/GoogleTextInput";
 import { icons } from "@/constants";
 import PriceModal from "./PriceModal";
-import { useLocationStore } from "@/Redux/store/useStore";
 
 type CustomModalProps = {
   visible: boolean;
@@ -25,7 +20,7 @@ type CustomModalProps = {
     longitude: number;
     address: string;
   }) => void;
-  distance: number | null;
+  distance: number | null; 
   duration: number | null;
 };
 
@@ -38,40 +33,24 @@ const CustomModal: React.FC<CustomModalProps> = ({
   duration,
 }) => {
   const [priceModalVisible, setPriceModalVisible] = useState(false);
-  const { userAddress, setUserLocation } = useLocationStore();
-
-  useEffect(() => {
-    (async () => {
-      let location = await Location.getCurrentPositionAsync({});
-
-      const address = await Location.reverseGeocodeAsync({
-        latitude: location.coords?.latitude!,
-        longitude: location.coords?.longitude!,
-      });
-
-      setUserLocation({
-        latitude: location.coords?.latitude,
-        longitude: location.coords?.longitude,
-        address: `${address[0].name}, ${address[0].region}`,
-      });
-    })();
-  }, []);
 
   const openPriceModal = () => {
-    onClose();
+    onClose(); 
     setTimeout(() => {
-      setPriceModalVisible(true);
-    }, 300);
+      setPriceModalVisible(true); 
+    }, 300); 
   };
 
   const closePriceModal = () => {
     setPriceModalVisible(false);
   };
 
-  const [selectedDestination, setSelectedDestination] = useState<string | null>(
-    null
-  );
-
+  const [selectedDestination, setSelectedDestination] = useState<{
+    latitude: number;
+    longitude: number;
+    address: string;
+  } | null>(null);
+  
   return (
     <>
       <Modal
@@ -80,59 +59,48 @@ const CustomModal: React.FC<CustomModalProps> = ({
         visible={visible}
         onRequestClose={onClose}
       >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.keyboardAvoidingView}
-        >
-          <View style={styles.modalContainer}>
-            <ScrollView contentContainerStyle={styles.scrollViewContent}>
-              <View style={styles.modalContent}>
-                <TouchableOpacity style={styles.closeIcon} onPress={onClose}>
-                  <Image source={icons.close} style={styles.closeImage} />
-                </TouchableOpacity>
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <TouchableOpacity style={styles.closeIcon} onPress={onClose}>
+              <Image source={icons.close} style={styles.closeImage} />
+            </TouchableOpacity>
 
-                <Text style={styles.modalTitle}>Choisissez votre adresse</Text>
+            <Text style={styles.modalTitle}>Choisissez votre adresse</Text>
 
-                <View style={styles.inputContainer}>
-                  <Image source={icons.point} style={styles.inputIcon} />
-                  <Text style={styles.inputText}>
-                    {userAddress || "Chargement de votre position..."}
-                  </Text>
-                </View>
+            <View style={styles.inputContainer}>
+              <Image source={icons.map} style={styles.inputIcon} />
+              <Text style={styles.inputText}>Votre position</Text>
+            </View>
 
-                {/* Destination Input */}
-                <GoogleTextInput
-                  icon={icons.search}
-                  handlePress={(location) => {
-                    setSelectedDestination(location.address);
-                    onDestinationSelect(location);
-                  }}
-                  containerStyle="width: 100%;"
-                  textInputBackgroundColor="#f5f5f5"
-                />
-                <Text style={styles.noAddressText}>
-                  {selectedDestination
-                    ? selectedDestination
-                    : "Aucune adresse choisie"}
-                </Text>
+            {/* Destination Input */}
+            <GoogleTextInput
+              icon={icons.search}
+              handlePress={(location) => {
+                setSelectedDestination(location); 
+                onDestinationSelect(location); 
+              }}
+              containerStyle={styles.destinationInput}
+              textInputBackgroundColor="#f5f5f5"
+            />
+          <Text style={styles.noAddressText}>
+            {selectedDestination ? selectedDestination.address : "Aucune adresse choisie"}
+          </Text>
 
-                <TouchableOpacity
-                  style={styles.confirmButton}
-                  onPress={openPriceModal}
-                >
-                  <Text style={styles.confirmButtonText}>Confirmer</Text>
-                </TouchableOpacity>
-              </View>
-            </ScrollView>
+            <TouchableOpacity
+              style={styles.confirmButton}
+              onPress={openPriceModal}
+            >
+              <Text style={styles.confirmButtonText}>Confirmer</Text>
+            </TouchableOpacity>
           </View>
-        </KeyboardAvoidingView>
+        </View>
       </Modal>
 
       {/* Price Modal */}
       <PriceModal
         visible={priceModalVisible}
         onClose={closePriceModal}
-        destination={selectedDestination || ""}
+        destination={selectedDestination} 
         userLocation={userLocation}
         distance={distance}
         duration={duration}
@@ -142,16 +110,9 @@ const CustomModal: React.FC<CustomModalProps> = ({
 };
 
 const styles = StyleSheet.create({
-  keyboardAvoidingView: {
-    flex: 1,
-  },
   modalContainer: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "flex-end",
-  },
-  scrollViewContent: {
-    flexGrow: 1,
     justifyContent: "flex-end",
   },
   modalContent: {
@@ -192,15 +153,14 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   inputIcon: {
-    width: 24,
-    height: 24,
+    width: 20,
+    height: 20,
     marginRight: 10,
     tintColor: "#666",
   },
   inputText: {
     fontSize: 14,
     color: "#666",
-    flex: 1,
   },
   destinationInput: {
     width: "100%",
