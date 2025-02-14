@@ -2,25 +2,62 @@ import { router } from "expo-router";
 import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, FlatList } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
-import { collection, query, getDocs } from "firebase/firestore";
-import { db } from "@/firebaseConfig"; // Assurez-vous que ce chemin est correct
+import { onSnapshot, query, collection, doc, getDoc } from "firebase/firestore";
+import { db } from "@/firebaseConfig";
+import { images, icons } from "@/constants";
 
 const History = () => {
+  type Trip = {
+    id: string;
+    chauffeurId?: string; 
+    status: string;
+    userLocation: { address: string };
+    destination: { address: string };
+    price: number;
+    createdAt: string;
+    chauffeur?: string; 
+  };
+  
   const [selectedTab, setSelectedTab] = useState("En cours");
-  const [allTrips, setAllTrips] = useState([]);
-  const [filteredTrips, setFilteredTrips] = useState([]);
+  const [allTrips, setAllTrips] = useState<Trip[]>([]);
+  const [filteredTrips, setFilteredTrips] = useState<Trip[]>([]);
+  const [ratedTrips, setRatedTrips] = useState(new Set());
 
   useEffect(() => {
-    const fetchTrips = async () => {
-      const q = query(collection(db, "trajet"));
-      const querySnapshot = await getDocs(q);
-      const tripsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const q = query(collection(db, "trajet"));
+
+    const unsubscribe = onSnapshot(q, async (querySnapshot) => {
+      const tripsData: Trip[] = await Promise.all(querySnapshot.docs.map(async (docSnapshot) => {
+        const tripData: Trip = { id: docSnapshot.id, ...docSnapshot.data() } as Trip;
+      
+        if (tripData.chauffeurId) {
+          try {
+            const chauffeurRef = doc(db, "personne", tripData.chauffeurId);
+            const chauffeurDoc = await getDoc(chauffeurRef);
+      
+            if (chauffeurDoc.exists()) {
+              tripData.chauffeur = chauffeurDoc.data().fullName;
+            } else {
+              console.warn(`Aucun chauffeur trouvé: ${tripData.chauffeurId}`);
+              tripData.chauffeur = "Chauffeur inconnu";
+            }
+          } catch (error) {
+            console.error("Erreur lors de la récupération du chauffeur:", error);
+            tripData.chauffeur = "Chauffeur inconnu";
+          }
+        }
+      
+        return tripData;
+      }));
+      
+      
+
       setAllTrips(tripsData);
       setFilteredTrips(tripsData.filter(trip => trip.status === "accepter"));
-    };
+    });
 
-    fetchTrips();
-  }, []);
+    return () => unsubscribe();
+  }, [ratedTrips]);
 
   useEffect(() => {
     const filterTrips = () => {
@@ -29,10 +66,10 @@ const History = () => {
           setFilteredTrips(allTrips.filter(trip => trip.status === "accepter"));
           break;
         case "Compléter":
-          setFilteredTrips(allTrips.filter(trip => trip.status === "Compléter"));
+          setFilteredTrips(allTrips.filter(trip => trip.status === "terminer"));
           break;
         case "Annuler":
-          setFilteredTrips(allTrips.filter(trip => trip.status === "Annuler"));
+          setFilteredTrips(allTrips.filter(trip => trip.status === "annuler"));
           break;
         default:
           setFilteredTrips(allTrips);
@@ -46,31 +83,33 @@ const History = () => {
     setSelectedTab(tab);
   };
 
-  const renderItem = ({ item }) => (
+  const renderItem = ({ item }: { item: Trip }) => (
     <TouchableOpacity
       style={styles.itemContainer}
-      onPress={() =>
-        router.push({
-          pathname: "/(Details)/DetPage",
-          params: {
-            id: item.id,
-            lieuDepart: item.userLocation.address,
-            villeDepart: "Bamako Mali",
-            lieuArrivee: item.destination,
-            villeArrivee: item.destination,
-            prix: item.price,
-            payePar: "Espèces",
-            date: new Date(item.createdAt).toLocaleDateString(),
-            heure: new Date(item.createdAt).toLocaleTimeString(),
-            nom: "Seydou Keita",
-            image: "https://img.freepik.com/photos-gratuite/capture-ecran-homme-noir-souriant-devant-fond-marron-concept-bonheur_181624-53291.jpg?t=st=1733407964~exp=1733411564~hmac=c51c5a069b5ff1991256973084738429fe43448eeaa83858860f02b00400e9c7&w=996",
-          },
-        })
-      }
+      onPress={() => {
+         {
+          router.push({
+            pathname: "/(Details)/DetPage",
+            params: {
+              id: item.id,
+              lieuDepart: item.userLocation.address,
+              villeDepart: "Bamako Mali",
+              lieuArrivee: item.destination.address,
+              villeArrivee: item.destination.address,
+              prix: item.price,
+              payePar: "Espèces",
+              date: new Date(item.createdAt).toLocaleDateString(),
+              heure: new Date(item.createdAt).toLocaleTimeString(),
+              nom: item.chauffeur || "Chauffeur inconnu",
+              image: icons.person,
+            },
+          });
+        }
+      }}
     >
       <View>
         <Text style={styles.title}>{item.userLocation.address}</Text>
-        <Text style={styles.subtitle}>{item.destination}</Text>
+        <Text style={styles.subtitle}>{item.destination.address}</Text>
         <Text style={styles.subtitle}>Prix : {item.price}</Text>
       </View>
       <Text style={styles.status}>{item.status}</Text>
@@ -176,10 +215,10 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
     color: "#000",
-    paddingBottom:8
+    paddingBottom: 8
   },
   subtitle: {
-    paddingBottom:5,
+    paddingBottom: 5,
     fontSize: 14,
     color: "#777",
   },

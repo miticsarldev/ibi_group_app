@@ -8,7 +8,6 @@ import Help from "./Help";
 import History from "./History";
 import Parametre from "./Parametre";
 import EditProfil from "./EditProfil";
-import Note from "./Note";
 import Adresse from "./Adresse";
 // Création du Drawer
 const Drawer = createDrawerNavigator();
@@ -31,7 +30,6 @@ export default function Layout() {
         <Drawer.Screen name="Apropos" component={Apropos} />
         <Drawer.Screen name="Parametre" component={Parametre} />
         <Drawer.Screen name="Help" component={Help} />
-        <Drawer.Screen name="Note" component={Note} />
         <Drawer.Screen name="Adresse" component={Adresse} />
       </Drawer.Navigator>
     </GestureHandlerRootView>
@@ -74,7 +72,6 @@ function CustomDrawerContent({ navigation }) {
           onPress={() => navigation.navigate("Parametre")}
         />
         <DrawerLink label="Help" onPress={() => navigation.navigate("Help")} />
-        <DrawerLink label="Note" onPress={() => navigation.navigate("Note")} />
         <DrawerLink label="Logout" onPress={() => console.log("Logged out")} />
       </View>
     </View>
