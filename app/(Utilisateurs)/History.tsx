@@ -7,27 +7,38 @@ import { db } from "@/firebaseConfig";
 import { images, icons } from "@/constants";
 
 const History = () => {
+  type Trip = {
+    id: string;
+    chauffeurId?: string; 
+    status: string;
+    userLocation: { address: string };
+    destination: { address: string };
+    price: number;
+    createdAt: string;
+    chauffeur?: string; 
+  };
+  
   const [selectedTab, setSelectedTab] = useState("En cours");
-  const [allTrips, setAllTrips] = useState([]);
-  const [filteredTrips, setFilteredTrips] = useState([]);
+  const [allTrips, setAllTrips] = useState<Trip[]>([]);
+  const [filteredTrips, setFilteredTrips] = useState<Trip[]>([]);
   const [ratedTrips, setRatedTrips] = useState(new Set());
 
   useEffect(() => {
     const q = query(collection(db, "trajet"));
 
     const unsubscribe = onSnapshot(q, async (querySnapshot) => {
-      const tripsData = await Promise.all(querySnapshot.docs.map(async (docSnapshot) => {
-        const tripData = { id: docSnapshot.id, ...docSnapshot.data() };
-
+      const tripsData: Trip[] = await Promise.all(querySnapshot.docs.map(async (docSnapshot) => {
+        const tripData: Trip = { id: docSnapshot.id, ...docSnapshot.data() } as Trip;
+      
         if (tripData.chauffeurId) {
           try {
             const chauffeurRef = doc(db, "personne", tripData.chauffeurId);
             const chauffeurDoc = await getDoc(chauffeurRef);
-
+      
             if (chauffeurDoc.exists()) {
               tripData.chauffeur = chauffeurDoc.data().fullName;
             } else {
-              console.warn(`Aucun chauffeur trouvé avec l'ID: ${tripData.chauffeurId}`);
+              console.warn(`Aucun chauffeur trouvé: ${tripData.chauffeurId}`);
               tripData.chauffeur = "Chauffeur inconnu";
             }
           } catch (error) {
@@ -35,20 +46,11 @@ const History = () => {
             tripData.chauffeur = "Chauffeur inconnu";
           }
         }
-
-        if (tripData.status === "terminer" && !ratedTrips.has(tripData.id)) {
-          router.push({
-            pathname: "/(Details)/Note",
-            params: {
-              tripId: tripData.id,
-            },
-          });
-
-          setRatedTrips((prev) => new Set(prev).add(tripData.id));
-        }
-
+      
         return tripData;
       }));
+      
+      
 
       setAllTrips(tripsData);
       setFilteredTrips(tripsData.filter(trip => trip.status === "accepter"));
@@ -81,7 +83,7 @@ const History = () => {
     setSelectedTab(tab);
   };
 
-  const renderItem = ({ item }) => (
+  const renderItem = ({ item }: { item: Trip }) => (
     <TouchableOpacity
       style={styles.itemContainer}
       onPress={() => {

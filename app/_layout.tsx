@@ -9,13 +9,15 @@ import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import "react-native-reanimated";
-
+import { Provider } from 'react-redux';
+import { store } from '@/Redux/store/store';
 import { useColorScheme } from "@/hooks/useColorScheme";
-
-// Prevent the splash screen from auto-hiding before asset loading is complete.
+import AppListener from './AppListener';
+import RateDoctorScreen from "./(Details)/Note";
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
+  
   const colorScheme = useColorScheme();
   const [loaded] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
@@ -32,6 +34,9 @@ export default function RootLayout() {
   }
 
   return (
+    <Provider store={store}>
+      <RateDoctorScreen />
+      <AppListener />
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <Stack>
         <Stack.Screen name="index" options={{ headerShown: false }} />
@@ -46,5 +51,6 @@ export default function RootLayout() {
 
       <StatusBar style="auto" />
     </ThemeProvider>
+    </Provider>
   );
 }
