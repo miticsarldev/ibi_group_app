@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Login } from "@/services/authService";
+import { Login } from "@/services/authService"; 
+import { useDispatch } from "react-redux";
+import Blur from '@/components/loader';
+import { setUser } from "@/reduxfordriver/slices/userSlice";
 import ToastMessage from "@/components/ToastMessage";
 
 const Connexion = () => {
   const router = useRouter();
+  const dispatch = useDispatch();
+  const [loading, setLoading] = useState(false);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -14,7 +19,7 @@ const Connexion = () => {
     type: "success",
     visible: false,
   });
-
+  
   const showToast = (message: string, type: 'success' | 'error') => {
     setToast({ message, type, visible: true });
   };
@@ -34,30 +39,38 @@ const Connexion = () => {
 
   const handleLogin = async () => {
     if (!validateFields()) return;
-
+    setLoading(true)
     try {
-      const { user, token } = await Login(email, password);
+      const { user, token, role } = await Login(email, password, dispatch);
+
+      // Mettre à jour l'état global Redux
+      dispatch(
+        setUser({
+          uid: user.uid,
+          email: user.email,
+          role: role,
+          token: token,
+        })
+      );
       Alert.alert("Connexion réussie", `Bienvenue ${user.email}`);
       showToast(`Bienvenue ${user.email}`, "success");
       console.log("Token JWT :", token);
-      router.push("/(Utilisateurs)/(tabs)/home");
     } catch (error) { 
         showToast("Login ou mot de passe invalid", "error");
+    } finally{
+      setLoading(false)
     }
   };
 
   return (
     <View style={styles.container}>
+      <Blur loading={loading} />
       <ToastMessage
         message={toast.message}
         type={toast.type}
         visible={toast.visible}
         onHide={() => setToast({ ...toast, visible: true })}
-      />
-      {/* Bouton retour */}
-      {/* <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-        <Text style={styles.backText}>← Retour</Text>
-      </TouchableOpacity> */}
+      /> 
 
       {/* Titre */}
       <Text style={styles.title}>Connexion</Text>

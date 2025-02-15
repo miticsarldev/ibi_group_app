@@ -1,24 +1,70 @@
-import React, { useRef } from "react";
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, TextInputProps } from "react-native";
-import { useRouter } from "expo-router"; 
-import { COLORS, FONTS } from "@/constants/styles";
+import React, { useEffect, useRef, useState } from "react";
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router"; 
+import { COLORS } from "@/constants/styles";
+import { verifierOtpTrajet } from "@/services/trajetService";
+import Blur from "@/components/loader";
 
 const OtpScreen: React.FC = () => {
-  const handleNext = () => {
-    router.replace("/(Driver)/itineraire?tripStage=dropoff");
-  };
-  
-  const router = useRouter();
-  const otpRefs = Array.from({ length: 5 }, () => useRef<TextInput>(null));
+  const router = useRouter(); 
+  const { trajetId } = useLocalSearchParams<{ trajetId: string }>(); 
+  const [otp, setOtp] = useState<string[]>(Array(4).fill(""));
+  const otpRefs = Array.from({ length: 4 }, () => useRef<TextInput>(null));
+  const [isOtpValid, setIsOtpValid] = useState<boolean>(false); 
+  const [loading, setLoading] = useState(false);
 
   const handleInputChange = (text: string, index: number) => {
-    if (text.length === 1 && index < otpRefs.length - 1) {
-      otpRefs[index + 1].current?.focus();
+    if (/^\d?$/.test(text)) {
+      const newOtp = [...otp];
+      newOtp[index] = text;
+      setOtp(newOtp);
+
+      if (text.length === 1 && index < otpRefs.length - 1) {
+        otpRefs[index + 1].current?.focus();
+      }
     }
   };
 
+  const handleValidateOtp = async () => {
+    try {
+      setLoading(true);
+      if (!trajetId) {
+        Alert.alert("Erreur", "Aucun trajet spécifié.");
+        setLoading(false);
+        return;
+      }
+  
+      const otpSaisi = otp.join("");
+      if (otpSaisi.length < 4) {
+        Alert.alert("Erreur", "Veuillez entrer un OTP valide.");
+        setLoading(false);
+        return;
+      }
+  
+      const result = await verifierOtpTrajet(trajetId, otpSaisi);
+
+      if (result.success) {
+        setIsOtpValid(true);   
+      } else {
+        Alert.alert("Échec", result.message);
+        setLoading(false);
+      }
+    } catch (error) {
+      console.error("Erreur lors de la validation du OTP :", error);
+      Alert.alert("Erreur", "Une erreur est survenue lors de la validation.");
+      setLoading(false);
+    } 
+  };
+
+  useEffect(() => {
+    if (isOtpValid) { 
+      router.push(`/(Driver)/itineraire?trajetId=${trajetId}&tripStage=dropoff`);
+    }
+  }, [isOtpValid, router]);
+
   return (
     <View style={styles.container}>
+      <Blur loading={loading} />
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerText}>Entre le OTP Code</Text>
@@ -41,7 +87,7 @@ const OtpScreen: React.FC = () => {
       {/* Button */}
       <TouchableOpacity
         style={styles.validateButton}
-        onPress={handleNext}
+        onPress={handleValidateOtp}
       >
         <Text style={styles.validateButtonText}>Valider</Text>
       </TouchableOpacity>

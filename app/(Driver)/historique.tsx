@@ -1,62 +1,70 @@
-import React, { useState } from "react";
-import {
-  View,
-  FlatList,
-  StyleSheet,
-  Text
-} from "react-native";  
-import { COLORS } from "../../constants/styles";
-type Transaction = {
-  id: string;
-  from: string;
-  to: string;
-  amount: string;
-  time: string;
-};
+import React, { useEffect, useState } from "react";
+import { View, FlatList, StyleSheet, Text } from "react-native";  
+import { COLORS } from "@/constants/styles";
+import { getHistoriqueTrajets } from "@/services/historiqueTrajetService"; 
+import { getAuth } from "firebase/auth";
+import { trajet } from "@/interface/trajet";
 
 const HistoriqueScreen = () => {
-  const [isSidebarOpen, setSidebarOpen] = useState(false);
+  const [trajets, setTrajets] = useState<trajet[]>([]); 
+  const [isLoading, setIsLoading] = useState(true); 
+  const totalMontant = trajets.reduce((acc, trajet) => {
+    const priceNumber = parseFloat(trajet.price?.replace(/[^0-9.-]+/g, "") || "0");
+    return acc + priceNumber;
+  }, 0);
+  const auth = getAuth();
+  const user = auth.currentUser;
 
-  const toggleSidebar = () => {
-    setSidebarOpen(!isSidebarOpen);
-    console.log("Sidebar toggled:", isSidebarOpen);
-  };
+useEffect(() => {
+  if (user?.uid) {
+    setIsLoading(true);
+    getHistoriqueTrajets(user.uid) 
+      .then((result) => {
+        setTrajets(result);
+      })
+      .catch((error) => {
+        console.error("Erreur lors de la récupération des trajets:", error);
+      })
+      .finally(() => setIsLoading(false));
+  }
+}, [user?.uid]);
 
-  const transactions: Transaction[] = [
-    { id: "1", from: "Sotuba", to: "Yirimadjo", amount: "3500F", time: "Il y’a 20 mins" },
-    { id: "2", from: "Sotuba", to: "Yirimadjo", amount: "3500F", time: "Il y’a 20 mins" },
-    { id: "3", from: "Sotuba", to: "Yirimadjo", amount: "3500F", time: "Il y’a 20 mins" },
-  ];
-
-  const renderItem = ({ item }: { item: Transaction }) => (
+  const renderItem = ({ item }: { item: trajet }) => (
     <View style={styles.card}>
       <View style={{ flex: 1 }}>
         <Text style={styles.transactionText}>
-          {item.from} ➡ {item.to}
+          {item.userLocation?.address} ➡ {item.destination?.address}
         </Text>
-        <Text style={styles.timeText}>{item.time}</Text>
+        <Text style={styles.timeText}>
+         {item.createdAt?.toDate().toLocaleString() || "Date inconnue"}
+        </Text>
       </View>
-      <Text style={styles.amountText}>{item.amount}</Text>
+      <Text style={styles.amountText}>{item.price ? `${item.price}` : "Montant inconnu"}</Text>
     </View>
   );
 
   return (
     <View style={styles.container}> 
+      {isLoading ? (
+        <Text style={styles.loadingText}>Chargement...</Text>
+      ) : (
+        <>
+        <View style={styles.totalContainer}> 
+          <Text style={styles.totalAmount}>
+           {totalMontant ? `${totalMontant} CFA` : "Montant inconnu"}
+          </Text>
+          <Text style={styles.totalLabel}>Total réalisé</Text>
+        </View>
 
-      {/* Total Realized */}
-      <View style={styles.totalContainer}>
-        <Text style={styles.totalAmount}>50 000 CFA</Text>
-        <Text style={styles.totalLabel}>Total réalisé</Text>
-      </View>
-
-      {/* Transaction List */}
-      <FlatList
-        data={transactions}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContainer}
-        style={{ marginTop: 40 }} 
-      />
+        <FlatList
+          data={trajets}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.trajetId}
+          contentContainerStyle={styles.listContainer}
+          style={{ marginTop: 40 }} 
+        />
+        </>
+      )}
     </View>
   );
 };
@@ -65,9 +73,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#FFFFFF", 
-    paddingHorizontal: 20,
-    // paddingVertical: 20, 
+    paddingHorizontal: 20,  
     paddingTop: 20,
+  },
+  loadingText: { 
+    fontSize: 16, 
+    color: COLORS.primary, 
+    textAlign: "center", 
+    marginTop: 20 
   },
   totalContainer: {
     backgroundColor: "#D1FAE5",

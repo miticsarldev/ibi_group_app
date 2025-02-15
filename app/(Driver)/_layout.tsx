@@ -1,47 +1,113 @@
-import React, { useEffect } from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, Image, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from "@expo/vector-icons";
 import { DrawerContentScrollView, DrawerItem } from "@react-navigation/drawer";
 import { router, usePathname } from "expo-router";
 import Drawer from "expo-router/drawer";
-import { COLORS } from '../../constants/styles';
+import { COLORS } from '@/constants/styles'; 
+import { useDispatch, useSelector } from "react-redux"; 
+import { Deconnexion, getUserInfo } from '@/services/authService';
+import { RootState } from '@/reduxfordriver/store';
 
 const CustomDrawerContent = (props:any) => {
+  const dispatch = useDispatch();
+  const user = useSelector((state: RootState) => state.user);
+  const [personne, setUser] = useState<any>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error'; visible: boolean }>({
+    message: '',
+    type: 'success',
+    visible: false,
+  });
+
+  const showToast = (message: string, type: 'success' | 'error') => {
+    setToast({ message, type, visible: true });
+  };
+
+  const handleLogout = async () => {
+    try {
+      Alert.alert(
+        'Confirmation',
+        'Voulez-vous vraiment vous déconnecter ?',
+        [
+          {
+            text: 'Non',
+            style: 'cancel',
+          },
+          {
+            text: 'Oui',
+            onPress: async () => {
+              try {
+                await Deconnexion(dispatch);
+                showToast('Déconnexion réussie.', 'success');
+                router.replace('/(UserLogin)/Connexion');
+              } catch (error) {
+                console.error('Erreur lors de la déconnexion :', error);
+                showToast('Une erreur est survenue lors de la déconnexion.', 'error');
+              }
+            },
+          },
+        ],
+        { cancelable: true }
+      );
+    } catch (error) {
+      console.error('Erreur lors de la déconnexion :', error);
+      showToast('Une erreur est survenue lors de la déconnexion.', 'error');
+    }
+  };
+
   const pathname = usePathname();
 
   useEffect(() => {
     console.log(pathname);
   }, [pathname]);
 
-  const handleLogout = () => {
-    console.log("Déconnexion effectuée");
-  };
+    // Récupérer les informations de l'utilisateur
+    useEffect(() => {
+      const fetchUserInfo = async () => {
+        try {
+          const userInfo = await getUserInfo(); // Appeler le service pour récupérer les données.
+          setUser(userInfo);
+        } catch (error) {
+          console.error("Erreur lors de la récupération des informations de l'utilisateur:", error);
+        }
+      };
+      fetchUserInfo();
+    }, []); 
 
   type IoniconName = "car-sport" | "document-text" | "flash" | "location-outline" | "warning" | "settings";
 
   type RoutePath = "/trajet" | "/historique" | "/station" | "/location" | "/signaler" | "/parametre";
 
-const items: { name: string; route: RoutePath; icon: IoniconName }[] = [
-  { name: "Trajet Disponible", route: "/trajet", icon: "car-sport" },
-  { name: "Historique", route: "/historique", icon: "document-text" },
-  { name: "Station", route: "/station", icon: "flash" },
-  { name: "Location", route: "/location", icon: "location-outline" },
-  { name: "Signaler", route: "/signaler", icon: "warning" },
-  { name: "Parametre", route: "/parametre", icon: "settings" },
+const allItems: { name: string; route: RoutePath; icon: IoniconName; roles: string[] }[] = [
+  { name: "Trajet Disponible", route: "/trajet", icon: "car-sport", roles: ["Chauffeur Personnel"]  },
+  { name: "Location", route: "/location", icon: "location-outline", roles: ["Chauffeur IBI"] },
+  { name: "Station", route: "/station", icon: "flash", roles: ["Chauffeur IBI"] },
+  { name: "Signaler", route: "/signaler", icon: "warning", roles: ["Chauffeur IBI"] },
+  { name: "Historique", route: "/historique", icon: "document-text", roles: ["Chauffeur Personnel", "Chauffeur IBI"] },
+  { name: "Parametre", route: "/parametre", icon: "settings", roles: ["Chauffeur Personnel", "Chauffeur IBI"] },
 ];
+
+const items = allItems.filter((item) => user.role && item.roles.includes(user.role));
+
 
   return (
     <DrawerContentScrollView {...props}>
       <View style={styles.userInfoWrapper}>
+      {personne ? (
+        <>
         <Image
           source={require("../../assets/image/persn.webp")}
           resizeMode='contain'
           style={styles.userImg}
         />
         <View style={styles.userDetailsWrapper}>
-          <Text style={styles.userName}>Admin Admin</Text>
-          <Text style={styles.userEmail}>admin@gmail.com</Text>
+          <Text style={styles.userName}>{personne.fullName || "Utilisateur"}</Text>
+          <Text style={styles.userEmail}>{personne.email}</Text>
         </View>
+        </>
+      ) : (
+        <Text style={styles.userName}>Chargement...</Text>
+      )}
       </View>
 
       {items.map((item) => (
@@ -92,8 +158,7 @@ export default function Layout() {
       <Drawer.Screen name="location" options={{ headerShown: true, title: 'Location' }} />
       <Drawer.Screen name="signaler" options={{ headerShown: true, title: 'Signaler' }} />
       <Drawer.Screen name="succees" options={{ headerShown: false }} />
-      <Drawer.Screen name="itineraire" options={{ headerShown: true, title: 'Itineraire' }} />
-      <Drawer.Screen name="inscriptionDriver" options={{ headerShown: false }} />
+      <Drawer.Screen name="itineraire" options={{ headerShown: true, title: 'Itineraire' }} /> 
       <Drawer.Screen name="editPassword" options={{ headerShown: false }} />
       <Drawer.Screen name="profil" options={{ headerShown: false }} />
       <Drawer.Screen name="stationItineraire" options={{ headerShown: true, title: 'Itineraire' }} />

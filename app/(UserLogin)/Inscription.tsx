@@ -6,17 +6,18 @@ import { launchImageLibrary } from "react-native-image-picker";
 import { Ionicons } from '@expo/vector-icons';
 import { useSearchParams } from "expo-router/build/hooks";
 import { Create } from '@/services/authService'; 
-import Blur from "@/components/loader";
-import { router } from "expo-router";
+import { useDispatch } from "react-redux";
+import Blur from "@/components/loader"; 
 
 const Inscription = ({ navigation }: any) => {
-  const [loading, setLoading] = useState(false);
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const searchParams = useSearchParams();
   const role = searchParams.get('role');
+  const [loading, setLoading] = useState(false);
   const [showPromoField, setShowPromoField] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
-  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const dispatch = useDispatch();
 
   if (!role) {
     return (
@@ -97,15 +98,14 @@ const Inscription = ({ navigation }: any) => {
       promoCode: formData.promoCode || null,
       permis: formData.driverLicenseURL || null,
       identiter: formData.identityURL || null,
+      image: null,
       role,
     };
 
     try {
-      await Create(personne);
+      setLoading(true);
+      await Create(personne, dispatch);
       Alert.alert("Succès", "Inscription réussie !");
-      setTimeout(() => {
-        router.push("/(Utilisateurs)/(tabs)/home");
-      }, 500);
     } catch (error:any) {
       Alert.alert("Erreur", "Une erreur est survenue lors de l'inscription.");
     } finally {

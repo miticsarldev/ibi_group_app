@@ -1,75 +1,80 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, Image } from 'react-native';
-import { useRouter } from 'expo-router'; 
-import { COLORS, SIZES } from '../../constants/styles';
-
-interface Vehicle {
-    id: number;
-    matricule: string;
-    distance: string;
-    personnes: number;
-    prix: string;
-    image: any;
-  }
-
-// Données des véhicules
-const vehicles = [
-  {
-    id: 1,
-    matricule: 'CC 7889 MD',
-    distance: '70Km',
-    personnes: 5,
-    prix: '5 000CFA /jours',
-    image: require('../../assets/image/voiture.png'),
-  },
-  {
-    id: 2,
-    matricule: 'CC 7800 MD',
-    distance: '700Km',
-    personnes: 5,
-    prix: '5 500CFA /jours',
-    image: require('../../assets/image/voiture.png'),
-  },
-  {
-    id: 3,
-    matricule: 'CC 9989 MD',
-    distance: '70Km',
-    personnes: 2,
-    prix: '2 500CFA /jours',
-    image: require('../../assets/image/moto.png'),
-  },
-];
- 
+import React, { useEffect, useState } from "react";
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, Image } from "react-native";
+import { useRouter } from "expo-router";
+import { COLORS, SIZES } from "@/constants/styles";
+import { fetchAvailableVehicules, initializeVehicules } from "@/services/vehiculeService";
+import { fetchUserRentalStatus } from '@/services/reservationService';
+import { vehicule } from "@/interface/vehicule";
+import Blur from "@/components/loader";
 
 const Location = () => {
   const router = useRouter();
+  const [vehicles, setVehicles] = useState<vehicule[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
+  const [hasActiveRental, setHasActiveRental] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [selectedVehicule, setSelectedVehicule] = useState<vehicule | null>(null); 
+  const [selectedType, setSelectedType] = useState<string | null>(null); 
 
-const handleCarSelection = () => {
-  setModalVisible(true);
-};
 
-const handleNavigate = () => {
-  setModalVisible(false);
-  router.push('/(Driver)/demandeVoiture');
-}
 
-  const renderVehicle = ({ item }: { item: Vehicle }) => (
+  useEffect(() => {
+    const loadVehiclesAndStatus = async () => {
+      setLoading(true); 
+      try {
+        const userHasRental = await fetchUserRentalStatus();
+        setHasActiveRental(userHasRental);
+
+        await initializeVehicules(); 
+
+        if (!userHasRental) {
+          const vehiculeDisponibles = await fetchAvailableVehicules();
+          setVehicles(vehiculeDisponibles);
+        }      
+      } catch (error) {
+        console.error('Erreur lors du chargement des véhicules et du statut de réservation :', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadVehiclesAndStatus();
+  }, []);
+
+  const handleCarSelection = (vehicule: vehicule) => {
+    setSelectedVehicule(vehicule);
+    console.log('Paramètres envoyés:', { id: vehicule.id, type: 'moto' });
+    if (vehicule.type === "moto") {  
+      router.push(`/(Driver)/demandeVoiture?id=${vehicule.id}&type=moto`);
+
+    } else { 
+      setModalVisible(true);
+    }
+  };
+
+    const handleTypeSelection = (type: string) => {
+      if (selectedVehicule) {  
+        console.log('Paramètres envoyés:', { id: selectedVehicule.id, type });
+        router.push(`/(Driver)/demandeVoiture?id=${selectedVehicule.id}&type=${encodeURIComponent(type)}`);
+      }
+      setModalVisible(false);
+    };
+
+  const renderVehicle = ({ item }: { item: vehicule }) => (
     <View style={styles.card}>
-      <View style={styles.cardContent}>
-        {/* Informations principales */}
-        <View style={styles.details}>  
+      <View style={styles.cardContent}> 
+        <View style={styles.details}>
           <View style={styles.matriculeContainer}>
             <Text style={styles.matriculeLabel}>Matricule :</Text>
-            <Text style={styles.matricule}>{item.matricule}</Text>  
+            <Text style={styles.matricule}>{item.matricule}</Text>
           </View>
-          <Text style={styles.info}>{item.distance} | {item.personnes} prs | {item.prix} </Text>
+          <Text style={styles.info}>{item.distance} | {item.personnes} prs | {item.prix}</Text>
         </View>
-        <Image source={item.image} style={styles.image} />
+        <Image source={{ uri: item.image }} style={styles.image} />
       </View>
 
       {/* Bouton de réservation */}
-      <TouchableOpacity onPress={handleCarSelection} style={styles.reserveButton}>
+      <TouchableOpacity onPress={() => handleCarSelection(item)} style={styles.reserveButton}>
         <Text style={styles.reserveText}>Réserver</Text>
       </TouchableOpacity>
     </View>
@@ -77,11 +82,21 @@ const handleNavigate = () => {
 
   return (
     <View style={styles.container}>
-      <FlatList
-        data={vehicles}
-        renderItem={renderVehicle}
-        keyExtractor={(item) => item.id.toString()}
-      />
+      <Blur loading={loading} />
+
+      {hasActiveRental ? (
+        <View style={styles.activeRentalContainer}>
+          <Text style={styles.activeRentalText}>
+            Vous avez déjà une location en cours. Veuillez la terminer avant d'en louer une autre.
+          </Text>
+        </View>
+      ) : (
+        <FlatList
+          data={vehicles}
+          renderItem={renderVehicle}
+          keyExtractor={(item) => item.id}
+        />
+      )}
 
       {/* Pop-up Modal */}
       <Modal
@@ -96,40 +111,40 @@ const handleNavigate = () => {
             <View style={styles.modalOptions}>
               <TouchableOpacity
                 style={[styles.optionCard, styles.optionIBI]}
-                onPress={handleNavigate}
+                onPress={() => handleTypeSelection('Mission')}
               >
                 <Image
-                  source={require('../../assets/image/mission.png')}
+                  source={require("../../assets/image/mission.png")}
                   style={styles.optionImage}
                 />
                 <Text style={styles.optionText}>Mission</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.optionCard, styles.optionPersonal]}
-                onPress={handleNavigate}
+                onPress={() => handleTypeSelection('Livraison')}
               >
                 <Image
-                  source={require('../../assets/image/livraision.png')}
+                  source={require("../../assets/image/livraision.png")}
                   style={styles.optionImage}
                 />
-                <Text style={styles.optionText}>Livraision</Text>
+                <Text style={styles.optionText}>Livraison</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.optionCard, styles.optionIBI]}
-                onPress={handleNavigate}
+                onPress={() => handleTypeSelection('Transport')}
               >
                 <Image
-                  source={require('../../assets/image/trans.png')}
+                  source={require("../../assets/image/trans.png")}
                   style={styles.optionImage}
                 />
                 <Text style={styles.optionText}>Transport</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.optionCard, styles.optionPersonal]}
-                onPress={handleNavigate}
+                onPress={() => handleTypeSelection('Autres')}
               >
                 <Image
-                  source={require('../../assets/image/over.png')}
+                  source={require("../../assets/image/over.png")}
                   style={styles.optionImage}
                 />
                 <Text style={styles.optionText}>Autres</Text>
@@ -142,11 +157,24 @@ const handleNavigate = () => {
   );
 };
 
+export default Location; 
+ 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.gray,
     padding: 16,
+  },
+  activeRentalContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  activeRentalText: {
+    fontSize: 16,
+    color: COLORS.primary,
+    textAlign: "center",
+    paddingHorizontal: 20,
   },
   card: {
     backgroundColor: COLORS.white,
@@ -255,4 +283,4 @@ const styles = StyleSheet.create({
   }
 });
 
-export default Location;
+// export default Location;

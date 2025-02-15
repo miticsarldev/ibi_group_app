@@ -1,17 +1,89 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, TextInput, Button, TouchableOpacity } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker"; 
-import { COLORS, FONTS, SIZES } from "../../constants/styles";
+import { COLORS, FONTS, SIZES } from "@/constants/styles";
+import { fetchUserRentalDetails } from "@/services/reservationService";
+import { createSignalement } from "@/services/signaleService";
+import { getAuth } from "firebase/auth";
 
 const Signale = () => {
   const [problemType, setProblemType] = useState("");
   const [description, setDescription] = useState("");
+  const [vehiculeId, setVehiculeId] = useState<string | null>(null);
+  const [signaler, setIsSignaler] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const handleSubmit = () => {
-    console.log("Type de problème :", problemType);
-    console.log("Description :", description); 
+    // Vérification du statut de réservation de l'utilisateur
+  useEffect(() => {
+    const checkRentalStatus = async () => {
+      setLoading(true);
+      try {
+        const { hasActiveReservation, vehiculeId } = await fetchUserRentalDetails();
+        setIsSignaler(hasActiveReservation);
+        setVehiculeId(vehiculeId || null);
+      } catch (error) {
+        console.error("Erreur lors de la vérification du statut de réservation :", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkRentalStatus();
+  }, []);
+
+  const handleSubmit = async () => {
+    if (!problemType || !description || !vehiculeId) {
+      Alert.alert("Erreur", "Veuillez remplir tous les champs.");
+      return;
+    }
+
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+
+      if (!user) {
+        Alert.alert("Erreur", "Utilisateur non connecté.");
+        return;
+      }
+
+      // Créez l'objet signalement
+      const signalement = {
+        userId: user.uid,
+        vehiculeId: vehiculeId,
+        typeProbleme: problemType,
+        description: description,
+        dateSignalement: new Date().toISOString(),
+      };
+
+      // Envoyer le signalement
+      const signalementId = await createSignalement(signalement);
+      Alert.alert("Succès", `Signalement enregistré avec succès, ID : ${signalementId}`);
+      setProblemType("");
+      setDescription("");
+    } catch (error) {
+      Alert.alert("Erreur", "Impossible d'enregistrer le signalement.");
+      console.error("Erreur lors de l'envoi du signalement :", error);
+    }
   };
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.loadingText}>Chargement...</Text>
+      </View>
+    );
+  }
+
+  if (!signaler) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.errorText}>
+          Vous n'avez pas de voiture louée. Impossible de signaler un problème.
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -69,6 +141,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     width: "100%",
     marginBottom: 20,
+  },
+  loadingText: {
+    fontSize: 18,
+    textAlign: "center",
+  },
+  errorText: {
+    fontSize: 16,
+    color: "#FF4D4D",
+    textAlign: "center",
   },
   label: {
     fontSize: 16,

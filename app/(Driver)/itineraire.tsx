@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, Image, StyleSheet, TouchableOpacity, Dimensions, } from "react-native";
+import { View, Text, Image, StyleSheet, TouchableOpacity, Dimensions, Modal, } from "react-native";
 import * as Location from "expo-location";
-import { GestureHandlerRootView, PanGestureHandler, State, PanGestureHandlerGestureEvent } from "react-native-gesture-handler";
+import { GestureHandlerRootView, PanGestureHandler, State, PanGestureHandlerGestureEvent, TextInput } from "react-native-gesture-handler";
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { COLORS } from "../../constants/styles";
-import { useLocationStore } from "@/Redux/store/useStore";
-import Map2 from "@/components/MapItineraire";  
-import { useSearchParams } from "expo-router/build/hooks";
+import { COLORS } from "@/constants/styles";
+import Map2 from "@/components/MapItineraire";
+import { useLocalSearchParams, useSearchParams } from "expo-router/build/hooks";
+import { trajet } from "@/interface/trajet";
+import { personne } from "@/interface/personne";
+import { fetchTrajet, terminerTrajet } from "@/services/trajetService";
+import { setLoading } from "@/redux/slices/trajetSlice";
 
 
 const { height } = Dimensions.get("window");
@@ -22,10 +25,32 @@ type LocationType = {
 };
 
 const Itineraire = () => {
-  const { setUserLocation, setDestinationLocation } = useLocationStore();
   const router = useRouter();
+  const params = useLocalSearchParams(); 
+  const searchParams = useSearchParams();
+  const trajetId = params.trajetId as string; 
+
+  const [tripStage, setTripStage] = useState<"pickup" | "dropoff">("pickup");
+  const [trajetData, setTrajetData] = useState<trajet | null>(null);
+  const [personneData, setPersonneData] = useState<personne | null>(null);
   const [userLocation, setUserLocationState] = useState<LocationType | null>(null);
-  const [destination, setDestination] = useState<LocationType | null>(null); 
+  const [destination, setDestination] = useState<LocationType | null>(null);
+  const [modalVisible, setModalVisible] = useState(false); 
+  const [cancelReason, setCancelReason] = useState("");
+  const [isCollapsed, setIsCollapsed] = useState(false); 
+  const translateY = useSharedValue(0);
+
+  useEffect(() => {
+    const loadTrajet = async () => {
+      if (!trajetId) return;
+      const { trajet, personne } = await fetchTrajet(trajetId);
+      setTrajetData(trajet);
+      setPersonneData(personne);
+    };
+
+    loadTrajet();
+  }, [trajetId]);
+
   useEffect(() => {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -37,48 +62,58 @@ const Itineraire = () => {
         longitude: location.coords.longitude,
       });
 
-      const userLoc: LocationType = {
+      const currentLocation: LocationType = {
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
         address: `${address[0]?.name ?? ""}, ${address[0]?.region ?? ""}`,
       };
 
-      setUserLocation(userLoc);
-      setUserLocationState(userLoc);
+      setUserLocationState(currentLocation);
 
-      const defaultDestination: LocationType = {
-        latitude: 12.6392,
-        longitude: -8.0029,
-        address: "Destination Client",
-      };
-
-      setDestination(defaultDestination);
-      setDestinationLocation(defaultDestination);
+      if (tripStage === "pickup") {
+        setDestination({
+          latitude: trajetData?.userLocation.latitude ?? currentLocation.latitude,
+          longitude: trajetData?.userLocation.longitude ?? currentLocation.longitude,
+          address: trajetData?.userLocation.address ?? "Destination par défaut",
+        });
+      }else{
+        setDestination({
+          latitude: trajetData?.destination?.latitude ?? currentLocation.latitude,
+          longitude: trajetData?.destination?.longitude ?? currentLocation.longitude,
+          address: trajetData?.destination?.address ?? "Destination par défaut"
+        });
+      }
     })();
-  }, []);  
-
-  const searchParams = useSearchParams();
-  const [tripStage, setTripStage] = useState<"pickup" | "dropoff">("pickup");
+  }, [trajetData, tripStage]); 
 
   useEffect(() => {
     const stage = searchParams.get("tripStage") as "pickup" | "dropoff" | null;
     if (stage === "pickup" || stage === "dropoff") {
-      setTripStage(stage); // Mise à jour de l'état
+      setTripStage(stage);
     }
   }, [searchParams]);
-  
-  const handleNextStage = () => {
+
+
+  const handleNextStage = async () => {
+    if (!trajetData) return;
+
     if (tripStage === "pickup") {
-      router.push("/(Driver)/otp");
-    } else if (tripStage === "dropoff") {
+      router.push(`/(Driver)/otp?trajetId=${trajetId}`) 
+    } else if (tripStage === "dropoff") { 
+      await terminerTrajet(trajetId);
       alert("Trajet terminé !");
       router.push("/(Driver)/trajet");
     }
   };
 
-  const translateY = useSharedValue(0);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const confirmCancel = () => {
+    // handleCancel(cancelReason);
+    router.push(`/(Driver)/trajet`)
+    setModalVisible(false);
 
+  };
+
+  
   const gestureHandler = (event: PanGestureHandlerGestureEvent) => {
     const { translationY } = event.nativeEvent;
     translateY.value = Math.min(MIN_HEIGHT, Math.max(MAX_HEIGHT, translationY));
@@ -104,17 +139,6 @@ const Itineraire = () => {
     transform: [{ translateY: translateY.value }],
   }));
 
-    const trajet = {
-    id: 1,
-    type: "Passager",
-    localisation: "Sotuba à Yirimadio",
-    personnes: 1,
-    temps: "5 mins",
-    distance: "800m",
-    prix: "2000 CFA",
-    image: require("../../assets/image/person.jpg"),
-  };
-
   return (
     <GestureHandlerRootView style={styles.container}>
       {/* Carte avec Directions */}
@@ -131,34 +155,102 @@ const Itineraire = () => {
 
       {/* Détails glissables */}
       <PanGestureHandler
-        onGestureEvent={gestureHandler}
+        onGestureEvent={(event) => {
+          translateY.value = Math.min(MIN_HEIGHT, Math.max(MAX_HEIGHT, event.nativeEvent.translationY));
+        }}
         onHandlerStateChange={(event) => {
           if (event.nativeEvent.state === State.END) {
-            gestureEndHandler(event);
+            translateY.value = withSpring(event.nativeEvent.translationY > height / 4 ? MIN_HEIGHT : MAX_HEIGHT);
+            setIsCollapsed(event.nativeEvent.translationY > height / 4);
           }
         }}
+        // onGestureEvent={gestureHandler}
+        // onHandlerStateChange={(event) => {
+        //   if (event.nativeEvent.state === State.END) {
+        //     gestureEndHandler(event);
+        //   }
+        // }}
       >
         <Animated.View style={[styles.detailsContainer, animatedStyle]}>
-          <View style={styles.handleBar} />
-          <Text style={styles.arrivalTime}>Heure estimée : 15h35</Text>
-          <View style={styles.userInfo}>
-            <Image source={trajet.image} style={styles.userImage} />
-            <View>
-              <Text style={styles.userName}>Aly Touré</Text>
-              <Text style={styles.userDetails}>
-                {trajet.distance} ({trajet.temps}){"\n"}
-                {trajet.localisation}
-              </Text>
+        {/* {trajetData && personneData ? (
+          <View>
+            <View style={styles.handleBar} />
+            <Text style={styles.arrivalTime}>Heure estimée : 15h35</Text>
+            <View style={styles.userInfo}>
+              <Image source={require("../../assets/image/person.jpg")} style={styles.userImage} />
+              <View>
+                <Text style={styles.userName}>{personneData.fullName}</Text>
+                <Text style={styles.userDetails}>
+                  800m (30mns){"\n"}
+                  {trajetData.destination?.address}
+                </Text>
+              </View>
             </View>
+            <Text style={styles.price}>
+              Montant à payer : {trajetData.price} 
+            </Text>
+            <TouchableOpacity style={styles.actionButton} onPress={handleNextStage}>
+              <Text style={styles.actionButtonText}>
+                {tripStage === "pickup" ? "Passager récupéré" : "Trajet terminé"}
+              </Text>
+            </TouchableOpacity>
+          </View>  
+        ) : (
+            <Text>Chargement des données...</Text>
+          )} */}
+          {trajetData && personneData ? (
+      <View>
+        <View style={styles.handleBar} />
+        <Text style={styles.arrivalTime}>Heure estimée : 15h35</Text>
+        <View style={styles.userInfo}>
+          <Image source={require("../../assets/image/person.jpg")} style={styles.userImage} />
+          <View>
+            <Text style={styles.userName}>{personneData.fullName}</Text>
+            <Text style={styles.userDetails}>
+              800m (30mns){"\n"}
+              {trajetData.destination?.address}
+            </Text>
           </View>
-          <Text style={styles.price}>
-            {tripStage === "pickup" ? "À récupérer" : "À déposer"} : {trajet.prix}
-          </Text>
+        </View>
+        <Text style={styles.price}>Montant à payer : {trajetData.price}</Text>
+        <View style={styles.buttonContainer}>
           <TouchableOpacity style={styles.actionButton} onPress={handleNextStage}>
             <Text style={styles.actionButtonText}>
               {tripStage === "pickup" ? "Passager récupéré" : "Trajet terminé"}
             </Text>
           </TouchableOpacity>
+          {tripStage !== "dropoff" && (
+            <TouchableOpacity style={styles.cancelButton} onPress={() => setModalVisible(true)}>
+              <Text style={styles.cancelButtonText}>Annuler</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+        {/* Modal pour saisir le motif d'annulation */}
+        <Modal visible={modalVisible} transparent animationType="slide">
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Motif d'annulation</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Saisissez votre motif"
+                value={cancelReason}
+                onChangeText={setCancelReason}
+              />
+              <View style={styles.modalButtons}>
+                <TouchableOpacity style={styles.modalButton} onPress={confirmCancel}>
+                  <Text style={styles.modalButtonText}>Valider</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.modalButton} onPress={() => setModalVisible(false)}>
+                  <Text style={styles.modalButtonText}>Annuler</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      </View>
+    ) : (
+      <Text>Chargement des données...</Text>
+    )}
         </Animated.View>
       </PanGestureHandler>
     </GestureHandlerRootView>
@@ -168,7 +260,7 @@ const Itineraire = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
+  }, 
   mapContainer: {
     flex: 1,
   },
@@ -232,6 +324,63 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
+  cancelButton: {
+    backgroundColor: "red",
+    padding: 12,
+    borderRadius: 10,
+    alignItems: "center",
+    marginLeft: 10,
+  },
+  cancelButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  buttonContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  modalContent: {
+    backgroundColor: "#fff",
+    padding: 20,
+    borderRadius: 10,
+    width: "80%",
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    padding: 10,
+    borderRadius: 5,
+    marginBottom: 10,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  modalButton: {
+    backgroundColor: COLORS.primary,
+    padding: 10,
+    borderRadius: 5,
+    alignItems: "center",
+    flex: 1,
+    marginHorizontal: 5,
+  },
+  modalButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
   expandButton: {
     position: "absolute",
     bottom: 80,
@@ -243,4 +392,6 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Itineraire;
+export default Itineraire;  
+  
+ 
